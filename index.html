@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Poker Classroom · Six-player practice</title>
+<style>
+
+:root{color-scheme:dark;--bg:#101a21;--surface:#19262f;--ink:#edf3f4;--muted:#9db0ba;--mint:#b1e6c9;--gold:#e7c47d;--border:#34454e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,sans-serif}button,input{font:inherit}button{cursor:pointer;border:1px solid var(--border);border-radius:9px;padding:11px 18px;background:#243640;color:var(--ink);font-weight:650;min-height:46px}button:hover:enabled{filter:brightness(1.14)}button:disabled{opacity:.4;cursor:default}button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:3px}button.primary{background:var(--mint);color:#10271d;border-color:var(--mint)}button.subtle{background:transparent}.shell{max-width:1300px;margin:auto;padding:26px 30px}header{display:flex;justify-content:space-between;align-items:center;gap:20px;border-bottom:1px solid var(--border);padding-bottom:20px}.brand{font-family:Georgia,serif;font-size:30px;letter-spacing:-1px}.brand span{color:var(--mint)}.eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--mint);font-weight:700}.subtitle{font-size:13px;color:var(--muted)}.stats{display:flex;gap:28px;text-align:right}.stat strong{display:block;font-size:24px;font-weight:550}.stat small{color:var(--muted);font-size:12px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:26px;margin-top:24px}.stage{background:linear-gradient(145deg,#1c2b35,#131f28);border:1px solid var(--border);border-radius:18px;padding:22px;min-height:490px;position:relative;overflow:hidden}.stage-top{display:flex;justify-content:space-between;color:var(--muted);font-size:13px}.table{position:relative;margin:72px auto 70px;max-width:660px;min-height:224px;border:8px solid #263e43;border-radius:130px;background:radial-gradient(ellipse,#1c4c46,#123b37);box-shadow:0 0 0 2px #42605a,0 18px 40px #0003;display:flex;align-items:center;justify-content:center;flex-direction:column}.seat{position:absolute;left:50%;transform:translateX(-50%);text-align:center;white-space:nowrap}.seat.villain{top:-74px}.seat.hero{bottom:-78px}.seat-label{color:var(--muted);font-size:12px;margin:5px 0}.seat-label strong{color:var(--ink);font-size:14px}.dealer{display:inline-grid;place-items:center;background:var(--gold);color:#243022;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;vertical-align:middle;margin-left:5px}.cards{display:flex;gap:7px;justify-content:center}.card{width:49px;height:67px;background:#f5f3e9;border-radius:7px;color:#182c34;padding:3px 7px;font-family:Georgia,serif;font-size:24px;font-weight:bold;text-align:left;box-shadow:0 3px 6px #0003;line-height:1.2}.card .suit{display:block;font-size:23px}.card.red{color:#b93f45}.card.back{background:repeating-linear-gradient(45deg,#365d65,#365d65 3px,#2e5059 3px,#2e5059 7px);border:3px solid #779296}.card.empty{background:#ffffff09;border:1px dashed #ffffff20;box-shadow:none}.pot{font-size:13px;color:#b1c9c1;margin-bottom:13px}.pot strong{color:#fff;font-size:18px;padding-left:7px}.bet{font-size:11px;color:var(--gold);height:17px}.result{font-size:14px;color:var(--mint);text-align:center;min-height:22px;margin-top:5px}.action-area{margin-top:18px}.actions{display:flex;gap:10px;flex-wrap:wrap}.actions button{flex:1}.sizing{display:flex;gap:8px;align-items:center;margin:14px 0 12px;flex-wrap:wrap;font-size:13px;color:var(--muted)}.sizing input{width:90px;background:var(--bg);color:var(--ink);border:1px solid var(--border);border-radius:6px;padding:8px}.sizing button{padding:5px 10px;min-height:34px;font-size:12px}.decision-note{font-size:12px;color:var(--muted);margin:10px 0}.panel{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:20px;margin-bottom:18px}.panel h2{margin:0 0 12px;font-family:Georgia,serif;font-size:22px;font-weight:400}.panel p{font-size:13px;color:var(--muted)}.panel .policy{font-size:11px;color:#9aaeb7;border-top:1px solid var(--border);padding-top:12px;margin-bottom:0}.hint-toggle{display:flex;gap:9px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer}.hint-toggle input{accent-color:var(--mint);width:17px;height:17px}.grade{font-size:12px;color:var(--gold);font-weight:650}.grade.good{color:var(--mint)}.recommendation{font-size:22px;margin:7px 0;color:var(--ink)}.metrics{display:flex;gap:22px;font-size:12px;color:var(--muted)}.metrics strong{display:block;color:var(--ink);font-size:20px;font-weight:500}.history{margin-top:20px;border-top:1px solid var(--border);padding-top:15px}.history summary{cursor:pointer;color:var(--muted);font-size:13px}.history ol{padding-left:22px;font-size:12px;color:var(--muted);max-height:160px;overflow:auto}.error{color:#ffc1b7;min-height:24px;font-size:13px;margin-top:12px}.welcome{padding:80px 24px;text-align:center}.welcome h1{font-family:Georgia,serif;font-size:45px;font-weight:400;margin:0 0 15px}.welcome p{color:var(--muted);max-width:390px;margin:0 auto 25px}.bottom-note{font-size:12px;color:var(--muted);margin-top:18px}.previous{font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:12px;margin-top:15px}.pending{opacity:.65;pointer-events:none}[hidden]{display:none!important}@media(max-width:970px){.layout{grid-template-columns:1fr 290px;gap:16px}.shell{padding:20px 18px}.stage{padding:18px 10px}.card{width:42px;height:61px;font-size:22px}.stats{gap:15px}}@media(max-width:740px){.layout{grid-template-columns:1fr}header{align-items:flex-start}.brand{font-size:27px}.stats{gap:12px}.stat strong{font-size:20px}.stat small{font-size:10px}.shell{padding:18px 14px}.stage{min-height:430px}.table{margin:65px 0 64px;min-height:200px;border-width:6px}.card{width:42px;height:60px}.seat.hero{bottom:-73px}.seat.villain{top:-68px}.actions{gap:7px}.actions button{padding:10px 8px;font-size:14px}.welcome h1{font-size:35px}aside{display:grid;grid-template-columns:1fr;gap:0}.subtitle{max-width:170px}}
+
+.stack-picker{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);margin-top:12px}.stack-picker select{background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font:inherit;min-height:35px}.stack-picker select:disabled{opacity:.65}.stage{min-height:586px;padding:20px}.stage-top{gap:10px}.arena{position:relative;height:500px;margin-top:10px}.table{position:absolute;left:8%;right:8%;top:22%;bottom:20%;margin:0;max-width:none;min-height:0;border-radius:44%;border-width:7px}.seat{position:absolute;width:126px;padding:8px 6px;border:1px solid #486168;border-radius:12px;background:#1a2a33;transform:translate(-50%,-50%);white-space:normal;box-shadow:0 5px 15px #0003}.seat.s0{left:50%;top:89%}.seat.s1{left:12%;top:70%}.seat.s2{left:12%;top:30%}.seat.s3{left:50%;top:11%}.seat.s4{left:88%;top:30%}.seat.s5{left:88%;top:70%}.seat.hero{bottom:auto;border-color:#8dbaa2;background:#213930}.seat.folded{opacity:.43}.seat.acting{outline:2px solid var(--mint);outline-offset:3px}.seat.won{border-color:var(--gold)}.seat .cards{gap:4px;margin:6px 0}.seat .card{width:29px;height:40px;padding:2px 4px;font-size:17px;line-height:1.02}.seat .card .suit{font-size:17px}.seat.hero .card{width:39px;height:53px;font-size:23px}.seat.hero .card .suit{font-size:22px}.seat .card.back{border-width:2px}.seat-head{display:flex;justify-content:space-between;align-items:center;gap:4px;font-size:12px;font-weight:650}.seat-position{font-size:10px;color:var(--muted);white-space:nowrap}.seat-stack{font-size:13px;font-weight:600}.seat-status{font-size:10px;color:var(--gold);height:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.seat.folded .seat-status{color:var(--muted)}.seat .dealer{width:15px;height:15px;font-size:9px;margin-left:3px}.table .card{width:45px;height:63px;font-size:24px}.table .card .suit{font-size:23px}.table-caption{color:#a9c7bb;font-size:11px;margin-top:12px}.result{margin:5px 0 0;min-height:24px;font-size:13px}.pot-list{font-size:12px;color:var(--gold);line-height:1.6;margin:12px 0 0;padding:0;list-style:none}.working{font-size:12px;color:var(--mint);min-height:20px;margin:8px 0}.table .pot{margin-bottom:10px}.seat.folded .card{filter:grayscale(1)}
+@media(max-width:970px){.layout{grid-template-columns:minmax(0,1fr) 280px}.seat{width:106px}.seat.s1,.seat.s2{left:13%}.seat.s4,.seat.s5{left:87%}.table .card{width:37px;height:54px;font-size:21px}.table .card .suit{font-size:20px}.table .cards{gap:5px}}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.arena{height:500px}.stage{min-height:580px}.seat{width:120px}.table .card{width:45px;height:62px}}
+@media(max-width:450px){header{align-items:stretch;flex-direction:column;gap:14px}.subtitle{max-width:none}.stats{display:grid;grid-template-columns:repeat(3,1fr);text-align:left;gap:10px}.stat strong{font-size:22px}.stat small{font-size:11px}.stage{padding:15px 10px;min-height:568px}.arena{height:490px}.seat{width:92px;padding:6px 4px}.seat.s1,.seat.s2{left:14%}.seat.s4,.seat.s5{left:86%}.seat-head{font-size:11px;gap:2px}.seat-position{font-size:9px}.seat-stack{font-size:12px}.seat .card{width:24px;height:34px;font-size:15px}.seat .card .suit{font-size:14px}.seat.hero .card{width:34px;height:45px;font-size:20px}.seat.hero .card .suit{font-size:19px}.table{left:4%;right:4%;border-width:5px}.table .card{width:32px;height:47px;font-size:19px;padding:3px 4px}.table .card .suit{font-size:18px}.table .cards{gap:4px}.table-caption{font-size:10px}.stage-top{font-size:11px}.stage-top .eyebrow{font-size:10px;letter-spacing:1.3px}.pot strong{font-size:17px}.result{font-size:12px}.sizing{font-size:12px}}
+
+/* Action identity is separate from the green/red decision result. */
+#fold{background:#303b46;border-color:#586775;color:#e2e9f0}
+#pass{background:#1e4664;border-color:#5683a4;color:#e1f2ff}
+#raise{background:#eda382;border-color:#eda382;color:#302016}
+#allin{background:#483960;border-color:#9479b8;color:#eee2ff}
+.actions button.coach-pick{box-shadow:inset 0 0 0 2px #b1e6c9;outline:1px solid #b1e6c9;outline-offset:2px}
+.choice-feedback{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid;border-radius:9px;padding:10px 13px;margin:0 0 14px;font-size:12px}
+.choice-feedback.good{background:#18392e;border-color:#3c7459;color:#c0efd0}
+.choice-feedback.bad{background:#42292b;border-color:#9c5459;color:#ffd3d4}
+.choice-feedback strong{margin-left:auto;font-size:12px}.outcome-icon{font-size:16px;font-weight:750}
+.choice-pill{display:inline-block;border:1px solid;border-radius:6px;padding:5px 9px!important;margin:7px 0!important;font-size:12px!important}
+.panel .choice-pill.good{background:#173b2c;border-color:#4b8865;color:#c0efd0}
+.panel .choice-pill.bad{background:#452b2d;border-color:#a26367;color:#ffd3d4}
+.grade.bad{color:#f5aeb2}.recommendation{font-size:20px}
+.range-header{display:flex;justify-content:space-between;align-items:center;gap:8px}.range-header h2{font-size:20px;margin:0}
+.range-header button{font-size:11px;min-height:32px;padding:5px 9px;white-space:nowrap}
+.panel p.range-context{font-size:11px;margin:9px 0 12px;color:var(--muted)}
+.range-legend{display:flex;gap:12px;align-items:center;font-size:10px;color:var(--muted);margin-bottom:9px}
+.range-legend span{display:flex;align-items:center;gap:5px}.swatch{width:9px;height:9px;border-radius:2px;display:inline-block;background:#344653}.swatch.raise{background:#eda382}.swatch.current{background:transparent;border:1px solid var(--gold)}
+.range-grid{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:2px;width:100%}
+.range-cell{font-family:system-ui,sans-serif;min-height:0;min-width:0;aspect-ratio:1;padding:0;border:1px solid transparent;border-radius:3px;font-size:8px;line-height:1;letter-spacing:-.3px;font-weight:600;cursor:pointer}
+.range-cell.range-raise{background:#da9276;color:#281c18}.range-cell.range-outside{background:#2d414e;color:#c5d2d9}
+.range-cell.current-hand{outline:2px solid var(--gold);outline-offset:0;position:relative;z-index:1}
+.range-cell.selected{border-color:white;box-shadow:inset 0 0 0 1px #fff9}.range-cell:focus-visible{outline:2px solid #fff;outline-offset:1px;z-index:2}
+.panel p.range-hand{font-size:11px;margin:12px 0 0;color:var(--ink)}
+.table-guide{font-size:12px;color:var(--muted);margin-top:16px}.table-guide summary{cursor:pointer}.table-guide p{max-width:600px}
+.previous{display:flex;justify-content:space-between;gap:12px;border-left:2px solid;padding:9px 0 9px 10px;margin-top:10px;border-top:0;font-size:12px}
+.previous.good{border-left-color:#83c6a1}.previous.bad{border-left-color:#dd868c}.previous.good strong{color:#b1e6c9}.previous.bad strong{color:#f4afb3;font-weight:500}
+@media(max-width:800px){.range-grid{max-width:390px;gap:3px}.range-cell{font-size:10px}.choice-feedback strong{margin-left:0}}
+
+/* Bets sit on the felt, separately from the players' remaining stacks. */
+.arena{height:560px}
+.table{top:20%;bottom:16%}
+.seat.s0{top:87%}
+.table .pot-display{position:absolute;top:22%;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:3px;white-space:nowrap}
+.table .pot{margin:0;font-size:11px;line-height:20px}
+.table .pot strong{font-size:17px;padding-left:6px}
+.table #board{position:absolute;left:50%;top:61%;transform:translate(-50%,-50%)}
+.table .table-caption{position:absolute;top:39%;left:50%;transform:translateX(-50%);white-space:nowrap;margin:0;font-size:10px}
+#table-bets{position:absolute;inset:0;pointer-events:none}
+.table-bet{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;flex-direction:column;gap:3px;z-index:2;animation:bet-appear .18s ease-out}
+.table-bet.b0{left:50%;top:70%}
+.table-bet.b1{left:27%;top:60%}
+.table-bet.b2{left:27%;top:44%}
+.table-bet.b3{left:50%;top:28%}
+.table-bet.b4{left:73%;top:44%}
+.table-bet.b5{left:73%;top:60%}
+.bet-amount{padding:2px 8px;border:1px solid #739b82;border-radius:12px;background:#102c25;box-shadow:0 2px 6px #0004;color:#f1f7e9;font-size:12px;font-weight:750;line-height:17px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.table-bet.all-in .bet-amount{border-color:#c3a3ef;color:#f1e5ff;background:#352647}
+.chip-pile{height:24px;display:flex;align-items:flex-end;justify-content:center;gap:3px;min-width:20px;filter:drop-shadow(0 3px 2px #0005)}
+.chip-column{position:relative;display:block;width:24px;height:24px}
+.poker-chip{position:absolute;left:0;bottom:calc(var(--layer)*2.5px);display:grid;place-items:center;width:24px;height:13px;border:2px dashed #f5f1d9;border-radius:50%;background:var(--chip-face);box-shadow:0 2px 0 var(--chip-edge),inset 0 0 0 1px #fff6;color:#fff;font:750 7px/1 system-ui;text-shadow:0 1px 1px #0009}
+.poker-chip.gold{--chip-face:#ad7936;--chip-edge:#69491f}
+.poker-chip.blue{--chip-face:#397aab;--chip-edge:#204762}
+.poker-chip.red{--chip-face:#b74e54;--chip-edge:#6d2a33}
+.poker-chip.ivory{--chip-face:#dadbd3;--chip-edge:#8a9288;color:#324338;text-shadow:none;border-color:#fafbf5}
+.chip-pile.compact .chip-column{width:21px}
+.chip-pile.compact .poker-chip{width:21px;height:12px}
+@keyframes bet-appear{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.table-bet{animation:none}}
+@media(max-width:450px){
+  .arena{height:560px}
+  .table .pot-display{top:16%}
+  .table .pot{font-size:10px}.table .pot strong{font-size:15px}
+  .table .table-caption{top:30%;font-size:9px}
+  .table #board{top:52%}
+  .table-bet.b0{left:50%;top:72%}
+  .table-bet.b1{left:39%;top:64%}
+  .table-bet.b2{left:24%;top:44%}
+  .table-bet.b3{left:50%;top:25%}
+  .table-bet.b4{left:76%;top:44%}
+  .table-bet.b5{left:61%;top:64%}
+  .bet-amount{font-size:10px;line-height:15px;padding:1px 6px}
+  .chip-pile.compact{height:18px;gap:2px;padding-right:4px}
+  .chip-pile.compact .chip-column{width:13px;height:18px}
+  .chip-pile.compact .poker-chip{width:17px;height:10px;border-width:1.5px;bottom:calc(var(--layer)*2px);font-size:6px}
+}
+
+@media(max-width:360px){.seat{width:80px}.seat-head{font-size:10px}.chip-pile.compact .chip-column{width:10px}.chip-pile.compact .poker-chip{width:14px;font-size:5px}.bet-amount{font-size:9px;padding:1px 5px}}
+
+@media(min-width:451px) and (max-width:800px){
+ .seat{width:106px}
+ .table .pot-display{top:18%}
+ .table .table-caption{top:32%}
+ .table #board{top:54%}
+ .table-bet.b0{left:50%;top:71.2%}
+ .table-bet.b1{left:35.5%;top:64%}
+ .table-bet.b2{left:24%;top:45%}
+ .table-bet.b3{left:50%;top:27%}
+ .table-bet.b4{left:76%;top:45%}
+ .table-bet.b5{left:64.5%;top:64%}
+ .bet-amount{font-size:11px;line-height:15px;padding:1px 6px}
+ .chip-pile.compact{height:18px;gap:2px;padding-right:4px}
+ .chip-pile.compact .chip-column{width:13px;height:18px}
+ .chip-pile.compact .poker-chip{width:17px;height:10px;border-width:1.5px;bottom:calc(var(--layer)*2px);font-size:6px}
+}
+#raise-presets{display:flex;gap:8px;flex-wrap:wrap}#raise-presets button[aria-pressed="true"]{border-color:var(--mint);color:var(--mint)}
+.seat.won{border:2px solid var(--gold);background:#3b3523;outline:3px solid #e9c77955;outline-offset:3px;box-shadow:0 0 26px #e9c77944;z-index:2}
+.winner-badge{margin:5px auto 2px;padding:2px 8px;border-radius:5px;background:var(--gold);color:#252419;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px}
+.seat.won .cards .card{box-shadow:0 0 0 2px var(--gold),0 3px 8px #0005}
+.seat.won .seat-status{height:auto;min-height:16px;white-space:normal;overflow:visible;font-size:11px;font-weight:700;color:#ffe5a1;line-height:1.4}
+.action-key{display:inline-block;margin-left:8px;padding:0 5px;border:1px solid currentColor;border-radius:4px;font:inherit;font-size:11px;opacity:.65;vertical-align:middle}
+#sound-toggle{align-self:center;font-size:12px;padding:6px 10px;min-height:34px;white-space:nowrap}
+@media(max-width:740px){header .stats{flex-wrap:wrap;justify-content:flex-end}#sound-toggle{order:1}}
+.card.winning-card,.seat.won .cards .card.winning-card{outline:3px solid var(--gold);outline-offset:2px;box-shadow:0 0 14px #e9c77966}
+.seat.won .cards .card:not(.winning-card){box-shadow:none}
+.history pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font:12px/1.6 ui-monospace,monospace;color:var(--muted)}#copy-status{margin-left:10px}
+/* Reserve feedback and control space so actions never jump between decisions. */
+.result .choice-feedback{min-height:36px;margin:0;padding:6px 10px;text-align:left}.result-summary{margin-bottom:4px}
+.sizing-slot{height:100px;overflow:auto}.sizing{margin:14px 0 12px}
+.result{height:84px;overflow:auto;margin-top:24px;padding-top:6px}
+.actions{min-height:48px}#next{max-width:100%}
+@media(max-width:740px){.result{height:104px}.sizing-slot{height:145px}#next{font-size:13px}}
+
+.choice-feedback.neutral{background:#22343c;border-color:#577380;color:#d3e6ed}
+@media(max-width:450px){
+  .shell{padding:12px}header{display:grid;grid-template-columns:minmax(0,1fr) 144px;gap:10px;padding-bottom:12px;align-items:start}
+  .brand{font-size:23px}.subtitle{font-size:11px;max-width:160px}
+  header .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 8px;text-align:right}
+  .stat strong{font-size:19px}.stat small{font-size:9px;white-space:nowrap}
+  #sound-toggle{grid-column:1/-1;justify-self:end;min-height:44px;margin-top:3px;padding:6px 12px}
+  .layout{margin-top:14px}.stage{min-height:0;padding:12px 10px}.arena{height:360px;margin-top:20px}
+  .table .pot-display{top:20%}.table .pot-display #pot-chips{display:none}
+  .table .table-caption{top:34%}.table #board{top:58%}
+  .table-bet .chip-pile{display:none}.table-bet.b3{top:30%}
+  .seat.s1,.seat.s2{left:15%}.seat.s4,.seat.s5{left:85%}
+  .stack-picker{margin-top:8px}.stack-picker select{min-height:44px}
+  .result{height:84px;margin-top:24px;padding-top:6px}
+  .working{margin:3px 0;min-height:18px}.action-area{margin-top:4px}.decision-note{margin:6px 0}
+  .action-key{display:none}.actions{min-height:48px}.actions button{min-height:48px;font-size:13px}
+  .sizing input{font-size:16px;min-height:44px}.sizing button{min-height:44px}
+  .sizing-slot{height:164px}.sizing{margin-top:10px}
+  #copy-history{min-height:44px}.hint-toggle{min-height:44px}
+}
+@media(max-width:350px){header{grid-template-columns:minmax(0,1fr) 132px}.brand{font-size:20px}.seat{width:82px}.seat-status{font-size:9px}.seat.won .seat-status{font-size:10px}.winner-badge{position:absolute;top:-17px;left:50%;transform:translateX(-50%);margin:0;white-space:nowrap;padding:2px 6px;font-size:9px;letter-spacing:0}.seat.s1,.seat.s5{top:74%}.actions button{font-size:12px;padding:10px 5px}.table .table-caption{top:30%}.table #board{top:52%;gap:3px}.table #board .card{width:24px;height:32px;font-size:15px;padding:2px 3px}.table #board .card .suit{font-size:14px}}
+.history-actions{display:flex;gap:8px;flex-wrap:wrap}.history-actions button{min-height:44px;font-size:13px}#reset-session{color:#ffc1b7}
+</style>
+</head>
+<body><div class="shell">
+<header><div><div class="brand">Poker <span>Classroom</span></div><div class="subtitle">Six seats. One decision at a time.</div></div><div class="stats"><button id="sound-toggle" class="subtle" type="button" aria-pressed="true" aria-label="Mute sounds">Sound on</button><div class="stat"><strong id="hands">0</strong><small>hands dealt</small></div><div class="stat"><strong id="accuracy">—</strong><small>accuracy</small></div><div class="stat"><strong id="decisions">0</strong><small>decisions</small></div></div></header>
+<div class="layout">
+<main>
+<div class="stage">
+<div class="stage-top"><span class="eyebrow">6-max Hold’em</span><span id="street">100 BB · No limit</span></div>
+<label class="stack-picker" for="stack-mode">Starting stacks<select id="stack-mode"><option value="equal">100 BB each</option><option value="mixed">Mixed · 25–150 BB</option></select></label>
+<div id="welcome" class="welcome"><h1>A seat at the table.</h1><p>Play against five simulated opponents. Practice position, multiway pots, and the decisions that take you to showdown.</p><button class="primary" id="start">Deal your first hand</button></div>
+<div id="game" hidden><div class="arena"><div class="table"><div class="pot-display"><div id="pot-chips"></div><div class="pot">POT<strong id="pot">0 BB</strong></div></div><div class="cards" id="board"></div><div class="table-caption" id="remaining"></div></div><div id="seats"></div><div id="table-bets"></div></div><div class="result" id="result" role="status"></div></div>
+</div>
+<div id="working" class="working" role="status" aria-live="polite"></div>
+<div class="action-area" id="action-area" hidden>
+<div class="decision-note" id="price"></div>
+<div class="actions"><button id="fold" aria-keyshortcuts="Escape" title="Fold (Esc)">Fold<kbd class="action-key" aria-hidden="true">Esc</kbd></button><button id="pass" aria-keyshortcuts="Space" title="Check or call (Space)">Check<kbd class="action-key" aria-hidden="true">Space</kbd></button><button id="raise" class="primary" aria-keyshortcuts="Enter" title="Bet or raise selected amount (Enter)">Raise<kbd class="action-key" aria-hidden="true">Enter</kbd></button><button id="next" class="primary" aria-keyshortcuts="Space Escape Enter" title="Deal next hand (Space, Esc, or Enter)" hidden>Deal next hand<kbd class="action-key" aria-hidden="true">Space / Esc / Enter</kbd></button></div>
+<div class="sizing-slot"><div class="sizing" id="sizing"><label for="size">Total street bet, BB</label><input type="number" step="0.5" id="size" aria-label="Total bet or raise size in big blinds"><span id="raise-presets" role="group" aria-label="Preset raise sizes"></span><button id="minimum">Minimum</button></div></div>
+
+</div>
+<div id="error" class="error" role="alert"></div>
+<details class="history" id="history" hidden><summary>Hand history</summary><pre id="log" tabindex="0" aria-label="Hand history text"></pre><div class="history-actions"><button id="copy-history" type="button">Copy to clipboard</button><button id="export-all-history" type="button">Export all hand history</button><button id="reset-session" class="subtle" type="button">Reset session</button></div><p id="history-count" class="decision-note"></p><span id="copy-status" role="status" class="decision-note"></span></details>
+<details class="table-guide"><summary>Controls</summary><p>Keyboard shortcuts: Esc to fold, Space to check or call, Enter to bet or raise the selected amount. After a hand ends, Space, Esc, or Enter deals the next hand. Shortcuts are inactive while typing a bet amount. Choose a preset, All-in, or a custom total, then press Bet or Raise to confirm. Preflop presets use big blinds for opening bets and multiples of the current bet for reraises. Postflop presets use a fraction of the pot after calling. Raise sizes are the total bet for this street. The button rotates and stacks reset each hand. Mixed stacks give you 100 BB against opponents with 25–150 BB.</p></details>
+</main>
+<aside>
+<div class="panel"><div class="eyebrow">Decision review</div><h2 id="review-title">Decision review</h2><div id="review"><p>Your choices will appear here.</p></div><label class="hint-toggle"><input type="checkbox" id="hints">Show coach</label></div>
+<section class="panel" id="range-panel" hidden>
+<div class="range-header"><h2 id="range-title">Opening range</h2><button id="show-range" type="button">View range</button></div>
+<div id="range-content" hidden><p id="range-context" class="range-context"></p><div class="range-legend"><span><i class="swatch raise"></i>Raise</span><span><i class="swatch"></i><span id="outside-label">Outside range</span></span><span><i class="swatch current"></i>Your hand</span></div><div id="range-grid" class="range-grid"></div><p id="range-hand" class="range-hand" aria-live="polite"></p></div>
+</section>
+<div class="panel" id="recap-panel" hidden><h2>Hand recap</h2><ul id="awards" class="pot-list"></ul><div id="previous"></div></div>
+</aside></div></div>
+<script src="./app.js" defer></script>
+</body></html>

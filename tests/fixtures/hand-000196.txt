@@ -1,0 +1,46 @@
+PokerStars Hand #196: Hold'em No Limit ($0.50/$1.00 USD) - 2026/10/23 00:00:00 ET
+Table 'Poker Classroom Simulation' 6-max Seat #4 is the button
+Seat 1: You ($100.00 in chips)
+Seat 2: Mara ($25.00 in chips)
+Seat 3: Jules ($40.00 in chips)
+Seat 4: Dev ($75.00 in chips)
+Seat 5: Noah ($100.00 in chips)
+Seat 6: Iris ($150.00 in chips)
+Noah: posts small blind $0.50
+Iris: posts big blind $1.00
+*** HOLE CARDS ***
+Dealt to You [Ks Kh]
+You: raises $1.50 to $2.50
+Mara: folds
+Jules: folds
+Dev: folds
+Noah: calls $2.00
+Iris: calls $1.50
+*** FLOP *** [Td 4d 6s]
+Noah: checks
+Iris: checks
+You: bets $4.00
+Noah: calls $4.00
+Iris: folds
+*** TURN *** [Td 4d 6s] [8c]
+Noah: checks
+You: bets $8.00
+Noah: calls $8.00
+*** RIVER *** [Td 4d 6s 8c] [Ac]
+Noah: bets $16.00
+You: raises $32.00 to $48.00
+Noah: raises $37.50 to $85.50 and is all-in
+You: calls $37.50 and is all-in
+*** SHOW DOWN ***
+You: shows [Ks Kh] (Pair)
+Noah: shows [Ah Jd] (Pair)
+Noah collected $202.50 from pot
+*** SUMMARY ***
+Total pot $202.50 | Rake $0.00
+Board [Td 4d 6s 8c Ac]
+Seat 1: You showed [Ks Kh] and lost
+Seat 2: Mara folded
+Seat 3: Jules folded
+Seat 4: Dev (button) folded
+Seat 5: Noah (small blind) showed [Ah Jd] and won ($202.50)
+Seat 6: Iris (big blind) folded
