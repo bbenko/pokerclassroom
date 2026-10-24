@@ -1,7 +1,7 @@
 'use strict';
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {Hand, Trainer, Random, DECK, advice, opponent_range, range_equity, river_values} = require('../engine.js');
+const {Hand, Trainer, Random, DECK, advice, opponent_range, range_equity, river_values, river_response, decision_review} = require('../engine.js');
 const {observationHand} = require('../scripts/evaluate-coach.cjs');
 const fixture = require('./fixtures/coach-decisions.json');
 function riverHand(hole, board, bet = 10, stacks = [100,100]) {
@@ -144,7 +144,7 @@ test('the engine loads as a browser worker script and resumes a saved decision',
   let message;
   const scope={self:{postMessage:value=>{message=value}},crypto:{getRandomValues:array=>{array[0]=9182;return array}}};
   vm.createContext(scope);
-  scope.importScripts=()=>vm.runInContext(fs.readFileSync(require.resolve('../engine.js'),'utf8'),scope);
+  scope.importScripts=(...files)=>files.forEach(file=>vm.runInContext(fs.readFileSync(require.resolve('../'+file),'utf8'),scope));
   vm.runInContext(fs.readFileSync(require.resolve('../game-worker.js'),'utf8'),scope);
   scope.self.onmessage({data:{id:1,path:'init'}});
   assert.ok(!message.error);
@@ -205,14 +205,13 @@ for(const id of ['river-top-pair-reraise','river-thin-value-paired-board','river
   assert.ok(report.range_sensitivity.some(x=>x.model==='sticky'));
   assert.ok(report.action_values.filter(x=>x.action==='raise').every(x=>Number.isFinite(x.worst_case_advantage_bb)));
 });
-test('two-pair river does not recommend a many-pot shove',()=>{
+test('two-pair river accepts calling and rejects the fragile many-pot shove plan',()=>{
   const h=decisionHand('river-two-pair-overbet'),report=advice(h,0,160,new Random(20977));
-  assert.equal(report.action,'raise');
-  assert.ok(report.target<=h.current_bet/2+1.5*(h.pot/2+h.legal().call));
-  assert.notEqual(report.target,98);
-  const shove=report.action_values.find(x=>x.target===98);
-  assert.ok(shove,'All-in remains a legal candidate');
-  assert.ok(shove.ev_bb<report.action_values.find(x=>x.target===report.target&&x.plan==='fold_to_reraise').ev_bb);
+  assert.equal(report.action,'call');
+  assert.ok(report.accepted.includes('call'));
+  const shoves=report.action_values.filter(x=>x.target===98);
+  assert.ok(shoves.length,'All-in remains a legal candidate');
+  assert.ok(shoves.every(x=>x.worst_case_advantage_bb<0));
 });
 test('facing a preflop three-bet uses more samples and permits reasonable alternatives',()=>{
   for(const seed of [1,20884,5000]){
@@ -257,11 +256,14 @@ test('aces on the three-club river prefer a call when strong hands are more conc
   const raise=report.action_values.find(x=>x.target===24&&x.plan==='fold_to_reraise');
   assert.ok(raise.worst_case_advantage_bb<0);
 });
-test('a moderate two-pair value raise survives the stronger-made-hand stress test',()=>{
+test('moderate two-pair value remains plausible but calling is accepted under response stress',()=>{
   const report=advice(decisionHand('river-two-pair-value'),0,160,new Random(10977));
-  assert.equal(report.action,'raise');assert.equal(report.target,15);
+  assert.equal(report.action,'call');
+  assert.ok(report.accepted.includes('call'));
+  // This remains a value raise under the original strong-made-hand model;
+  // its recommendation changes because the new response stress is unfavorable.
   assert.equal(report.range_sensitivity.find(x=>x.model==='value-heavy').action,'raise');
-  assert.ok(report.action_values.some(x=>x.target===15&&x.worst_case_advantage_bb>0));
+  assert.ok(report.action_values.some(x=>x.target===15&&x.ev_bb>report.action_values.find(v=>v.action==='call').ev_bb));
 });
 test('a marginal A9o preflop defense remains call-or-fold',()=>{
   const report=advice(decisionHand('preflop-weak-ace-defense'),0,160,new Random(10991));
@@ -281,4 +283,101 @@ test('made-hand stress uses public information and preserves normalized exact ri
     const cards=[...h.holes[0],...h.board,...Object.values(s.holes).flat()];
     assert.equal(new Set(cards).size,cards.length);
   }
+});
+
+test('review labels preserve accepted and close actions and require robust evidence for big mistakes', () => {
+  const base = {accepted: ['call'], confidence: 'clear', reason: 'Prefer calling.'};
+  assert.equal(decision_review(base, 'call').level, 'good');
+  assert.equal(decision_review({...base, confidence: 'close'}, 'call').level, 'close');
+  assert.equal(decision_review(base, 'fold').level, 'mistake');
+  const evidence = {losses: {fold: 8}, threshold_bb: 2, models: 7};
+  assert.equal(decision_review({...base, review_evidence: evidence}, 'fold').level, 'big-mistake');
+  for (const altered of [{...evidence, models: 4}, {...evidence, losses: {fold: 1}}, {...evidence, losses: {fold: 2}}, {...evidence, losses: {fold: -1}}, {...evidence, losses: {}}])
+    assert.equal(decision_review({...base, review_evidence: altered}, 'fold').level, 'mistake');
+  assert.equal(decision_review({...base, review_evidence: evidence, accepted: ['call', 'fold'], confidence: 'close'}, 'fold').level, 'close');
+});
+
+test('exact river values flag folding the nuts; preflop chart errors remain ordinary mistakes', () => {
+  const h = riverHand('Tc 3d', 'Ac Kc Qc Jc 2d');
+  const report = advice(h, 0, 40, new Random(9));
+  assert.equal(report.review_evidence.models, 7);
+  assert.equal(decision_review(report, 'fold').level, 'big-mistake');
+  const preflop = new Hand(new Random(5));
+  const opening = advice(preflop, preflop.actor, 40, new Random(9));
+  assert.equal(opening.review_evidence, null);
+  const rejected = ['raise', 'call', 'fold'].find(action => !opening.accepted.includes(action));
+  assert.equal(decision_review(opening, rejected).level, 'mistake');
+});
+
+test('completed decisions carry a review label through saved sessions', () => {
+  const t = new Trainer(0, 40); t.new_hand();
+  t.act(t.pending.action, t.pending.target);
+  assert.ok(['good', 'close'].includes(t.feedback[0].review.level));
+  assert.deepEqual(Trainer.restore(JSON.parse(JSON.stringify(t.snapshot()))).feedback[0].review, t.feedback[0].review);
+});
+
+test('reviewed river raises accept calling under normal-reraise pressure', () => {
+  for (const id of ['river-at-fragile-raise', 'river-j7-fragile-raise', 'river-j8-fragile-sizing']) {
+    const item = fixture.cases.find(c => c.id === id), h = observationHand(item.observation);
+    const report = advice(h, h.actor, 320, new Random(10000 + item.hand));
+    assert.ok(report.accepted.includes('call'), id);
+    assert.ok(report.range_sensitivity.some(m => m.model === 'bot-policy'), id);
+  }
+});
+
+test('reviewed small three-bet defenses preserve close call and fold alternatives', () => {
+  for (const id of ['utg-a6s-small-button-threebet', 'utg-a4s-small-sb-threebet']) {
+    const item = fixture.cases.find(c => c.id === id), h = observationHand(item.observation);
+    const report = advice(h, h.actor, 5000, new Random(10000 + item.hand));
+    assert.deepEqual(report.accepted, ['call', 'fold'], id);
+    assert.equal(report.confidence, 'close');
+  }
+});
+
+test('bot-policy river response includes legal normal reraises without private cards', () => {
+  const item = fixture.cases.find(c => c.id === 'river-at-fragile-raise');
+  const h = observationHand(item.observation), opponent = h.live.find(i => i !== h.actor);
+  const response = river_response(h, h.actor, opponent, ['As', '9s'], 48, 'bot-policy');
+  assert.equal(response.reraise_to, 144); // raise to 24 BB, reraise to 72 BB
+  assert.ok(response.reraise > 0.5);
+  assert.equal(response.shove, 0);
+  assert.ok(Math.abs(response.fold + response.call + response.reraise + response.shove - 1) < 1e-10);
+  h.holes[opponent] = ['invalid']; h.deck = ['invalid'];
+  assert.deepEqual(river_response(h, h.actor, opponent, ['As', '9s'], 48, 'bot-policy'), response);
+  // A short all-in increase does not reopen betting for a player who already acted.
+  h.last_full_raise = 24; h.acted_at[opponent] = 24;
+  assert.equal(river_response(h, h.actor, opponent, ['As', '9s'], 30, 'bot-policy').reraise, 0);
+  // No reraise is possible when the raiser has already committed its stack.
+  h.players[h.actor].stack = 48 - h.players[h.actor].street_bet;
+  assert.equal(river_response(h, h.actor, opponent, ['As', '9s'], 48, 'bot-policy').reraise, 0);
+});
+
+test('normal-reraise settlement values calling and folding separately and respects short stacks', () => {
+  const h = riverHand('Ac Kh', 'Kd 8c 4h 2s 3d');
+  const draw = exactDraw(h, [['Kc Qh', 1]]);
+  const values = river_values(h, 0, draw, 'bot-policy');
+  const fold = values.find(v => v.action === 'raise' && v.target === 20 && v.plan === 'fold_to_reraise');
+  const call = values.find(v => v.action === 'raise' && v.target === 20 && v.plan === 'call_reraise');
+  assert.ok(call.ev_bb > fold.ev_bb + 20);
+  assert.ok(best(values).ev_bb > values.find(v => v.action === 'call').ev_bb);
+  h.players[1].stack = 4;
+  const short = river_values(h, 0, draw, 'bot-policy');
+  assert.ok(short.every(v => v.ev_bb <= 32 + 1e-9));
+});
+
+test('strong two-pair value raises remain available across the expanded response models', () => {
+  const h = riverHand('Ac Kh', 'Ad Kc 8h 4s 2d');
+  const report = advice(h, 0, 160, new Random(54));
+  assert.equal(report.action, 'raise');
+  assert.ok(report.action_values.some(v => v.action === 'raise' && v.worst_case_advantage_bb > Math.max(0.25, h.pot / 2 * 0.02)));
+});
+
+test('bot response stress agrees with the independent sampled response diagnostic', () => {
+  const item = fixture.cases.find(c => c.id === 'river-at-fragile-raise');
+  const h = observationHand(item.observation), opponent = h.live.find(i => i !== h.actor);
+  const range = opponent_range(h, h.actor, opponent);
+  const reraiseProbability = range.items.reduce((p, x) => p + x.weight / range.total * river_response(h, h.actor, opponent, x.pair, 48, 'bot-policy').reraise, 0);
+  // The independent 2,000-holding experiment ran opponent_advice with 53
+  // samples, then applied the 12% passive substitution: 63.1% reraises.
+  assert.ok(Math.abs(reraiseProbability - 0.631) < 0.04, reraiseProbability);
 });

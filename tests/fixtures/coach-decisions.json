@@ -10524,6 +10524,1287 @@
         ],
         "actor": 0
       }
+    },
+    {
+      "id": "utg-a6s-small-button-threebet",
+      "hand": 466,
+      "category": "Close three-bet defense",
+      "review": "Close preflop defense out of position: folding must remain accepted; raw equity alone does not establish a profitable call.",
+      "observation": {
+        "n": 6,
+        "button": 3,
+        "sb": 4,
+        "bb_seat": 5,
+        "actor": 0,
+        "street": 0,
+        "current_bet": 15,
+        "last_full_raise": 10,
+        "acted_at": [
+          5,
+          5,
+          5,
+          15,
+          15,
+          15
+        ],
+        "pending": [
+          0
+        ],
+        "done": false,
+        "players": [
+          {
+            "stack": 195,
+            "street_bet": 5,
+            "contributed": 5,
+            "folded": false,
+            "last_action": "Raise to 2.5"
+          },
+          {
+            "stack": 50,
+            "street_bet": 0,
+            "contributed": 0,
+            "folded": true,
+            "last_action": "Fold"
+          },
+          {
+            "stack": 80,
+            "street_bet": 0,
+            "contributed": 0,
+            "folded": true,
+            "last_action": "Fold"
+          },
+          {
+            "stack": 135,
+            "street_bet": 15,
+            "contributed": 15,
+            "folded": false,
+            "last_action": "Raise to 7.5"
+          },
+          {
+            "stack": 199,
+            "street_bet": 1,
+            "contributed": 1,
+            "folded": true,
+            "last_action": "Fold"
+          },
+          {
+            "stack": 298,
+            "street_bet": 2,
+            "contributed": 2,
+            "folded": true,
+            "last_action": "Fold"
+          }
+        ],
+        "holes": [
+          [
+            "As",
+            "6s"
+          ],
+          [],
+          [],
+          [],
+          [],
+          []
+        ],
+        "board": [],
+        "history": [
+          {
+            "actor": 0,
+            "street": 0,
+            "board": [],
+            "position": "UTG",
+            "pot": 3,
+            "bet": 2,
+            "to_call": 2,
+            "stack": 200,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "raise",
+            "amount": 5,
+            "target": 5,
+            "effective_amount": 5
+          },
+          {
+            "actor": 1,
+            "street": 0,
+            "board": [],
+            "position": "HJ",
+            "pot": 8,
+            "bet": 5,
+            "to_call": 5,
+            "stack": 50,
+            "street_bet": 0,
+            "raises": 1,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 2,
+            "street": 0,
+            "board": [],
+            "position": "CO",
+            "pot": 8,
+            "bet": 5,
+            "to_call": 5,
+            "stack": 80,
+            "street_bet": 0,
+            "raises": 1,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 3,
+            "street": 0,
+            "board": [],
+            "position": "BTN",
+            "pot": 8,
+            "bet": 5,
+            "to_call": 5,
+            "stack": 150,
+            "street_bet": 0,
+            "raises": 1,
+            "kind": "raise",
+            "amount": 15,
+            "target": 15,
+            "effective_amount": 15
+          },
+          {
+            "actor": 4,
+            "street": 0,
+            "board": [],
+            "position": "SB",
+            "pot": 23,
+            "bet": 15,
+            "to_call": 14,
+            "stack": 199,
+            "street_bet": 1,
+            "raises": 2,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 5,
+            "street": 0,
+            "board": [],
+            "position": "BB",
+            "pot": 23,
+            "bet": 15,
+            "to_call": 13,
+            "stack": 298,
+            "street_bet": 2,
+            "raises": 2,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "utg-a4s-small-sb-threebet",
+      "hand": 184,
+      "category": "Close three-bet defense",
+      "review": "Close preflop defense in position against a small three-bet: preserve call/fold alternatives.",
+      "observation": {
+        "n": 6,
+        "button": 3,
+        "sb": 4,
+        "bb_seat": 5,
+        "actor": 0,
+        "street": 0,
+        "current_bet": 15,
+        "last_full_raise": 10,
+        "acted_at": [
+          5,
+          5,
+          5,
+          5,
+          15,
+          15
+        ],
+        "pending": [
+          0
+        ],
+        "done": false,
+        "players": [
+          {
+            "stack": 195,
+            "street_bet": 5,
+            "contributed": 5,
+            "folded": false,
+            "last_action": "Raise to 2.5"
+          },
+          {
+            "stack": 50,
+            "street_bet": 0,
+            "contributed": 0,
+            "folded": true,
+            "last_action": "Fold"
+          },
+          {
+            "stack": 80,
+            "street_bet": 0,
+            "contributed": 0,
+            "folded": true,
+            "last_action": "Fold"
+          },
+          {
+            "stack": 150,
+            "street_bet": 0,
+            "contributed": 0,
+            "folded": true,
+            "last_action": "Fold"
+          },
+          {
+            "stack": 185,
+            "street_bet": 15,
+            "contributed": 15,
+            "folded": false,
+            "last_action": "Raise to 7.5"
+          },
+          {
+            "stack": 298,
+            "street_bet": 2,
+            "contributed": 2,
+            "folded": true,
+            "last_action": "Fold"
+          }
+        ],
+        "holes": [
+          [
+            "4h",
+            "Ah"
+          ],
+          [],
+          [],
+          [],
+          [],
+          []
+        ],
+        "board": [],
+        "history": [
+          {
+            "actor": 0,
+            "street": 0,
+            "board": [],
+            "position": "UTG",
+            "pot": 3,
+            "bet": 2,
+            "to_call": 2,
+            "stack": 200,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "raise",
+            "amount": 5,
+            "target": 5,
+            "effective_amount": 5
+          },
+          {
+            "actor": 1,
+            "street": 0,
+            "board": [],
+            "position": "HJ",
+            "pot": 8,
+            "bet": 5,
+            "to_call": 5,
+            "stack": 50,
+            "street_bet": 0,
+            "raises": 1,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 2,
+            "street": 0,
+            "board": [],
+            "position": "CO",
+            "pot": 8,
+            "bet": 5,
+            "to_call": 5,
+            "stack": 80,
+            "street_bet": 0,
+            "raises": 1,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 3,
+            "street": 0,
+            "board": [],
+            "position": "BTN",
+            "pot": 8,
+            "bet": 5,
+            "to_call": 5,
+            "stack": 150,
+            "street_bet": 0,
+            "raises": 1,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 4,
+            "street": 0,
+            "board": [],
+            "position": "SB",
+            "pot": 8,
+            "bet": 5,
+            "to_call": 4,
+            "stack": 199,
+            "street_bet": 1,
+            "raises": 1,
+            "kind": "raise",
+            "amount": 14,
+            "target": 15,
+            "effective_amount": 14
+          },
+          {
+            "actor": 5,
+            "street": 0,
+            "board": [],
+            "position": "BB",
+            "pot": 22,
+            "bet": 15,
+            "to_call": 13,
+            "stack": 298,
+            "street_bet": 2,
+            "raises": 2,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "river-at-fragile-raise",
+      "hand": 951,
+      "category": "River response mismatch",
+      "review": "Top pair facing a river lead after two calls: accept calling and stress frequent normal-sized reraises.",
+      "observation": {
+        "n": 6,
+        "button": 2,
+        "sb": 3,
+        "bb_seat": 4,
+        "actor": 0,
+        "street": 3,
+        "current_bet": 24,
+        "last_full_raise": 24,
+        "acted_at": [
+          null,
+          null,
+          null,
+          null,
+          24,
+          null
+        ],
+        "pending": [
+          0
+        ],
+        "done": false,
+        "players": [
+          {
+            "stack": 177,
+            "street_bet": 0,
+            "contributed": 23,
+            "folded": false,
+            "last_action": ""
+          },
+          {
+            "stack": 200,
+            "street_bet": 0,
+            "contributed": 0,
+            "folded": true,
+            "last_action": "Fold"
+          },
+          {
+            "stack": 200,
+            "street_bet": 0,
+            "contributed": 0,
+            "folded": true,
+            "last_action": "Fold"
+          },
+          {
+            "stack": 199,
+            "street_bet": 0,
+            "contributed": 1,
+            "folded": true,
+            "last_action": "Fold"
+          },
+          {
+            "stack": 153,
+            "street_bet": 24,
+            "contributed": 47,
+            "folded": false,
+            "last_action": "Bet 12"
+          },
+          {
+            "stack": 200,
+            "street_bet": 0,
+            "contributed": 0,
+            "folded": true,
+            "last_action": "Fold"
+          }
+        ],
+        "holes": [
+          [
+            "Ac",
+            "Ts"
+          ],
+          [],
+          [],
+          [],
+          [],
+          []
+        ],
+        "board": [
+          "Jc",
+          "Ah",
+          "7s",
+          "5c",
+          "6h"
+        ],
+        "history": [
+          {
+            "actor": 5,
+            "street": 0,
+            "board": [],
+            "position": "UTG",
+            "pot": 3,
+            "bet": 2,
+            "to_call": 2,
+            "stack": 200,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 0,
+            "street": 0,
+            "board": [],
+            "position": "HJ",
+            "pot": 3,
+            "bet": 2,
+            "to_call": 2,
+            "stack": 200,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "raise",
+            "amount": 5,
+            "target": 5,
+            "effective_amount": 5
+          },
+          {
+            "actor": 1,
+            "street": 0,
+            "board": [],
+            "position": "CO",
+            "pot": 8,
+            "bet": 5,
+            "to_call": 5,
+            "stack": 200,
+            "street_bet": 0,
+            "raises": 1,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 2,
+            "street": 0,
+            "board": [],
+            "position": "BTN",
+            "pot": 8,
+            "bet": 5,
+            "to_call": 5,
+            "stack": 200,
+            "street_bet": 0,
+            "raises": 1,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 3,
+            "street": 0,
+            "board": [],
+            "position": "SB",
+            "pot": 8,
+            "bet": 5,
+            "to_call": 4,
+            "stack": 199,
+            "street_bet": 1,
+            "raises": 1,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 4,
+            "street": 0,
+            "board": [],
+            "position": "BB",
+            "pot": 8,
+            "bet": 5,
+            "to_call": 3,
+            "stack": 198,
+            "street_bet": 2,
+            "raises": 1,
+            "kind": "call",
+            "amount": 3,
+            "target": null,
+            "effective_amount": 3
+          },
+          {
+            "actor": 4,
+            "street": 1,
+            "board": [
+              "Jc",
+              "Ah",
+              "7s"
+            ],
+            "position": "BB",
+            "pot": 11,
+            "bet": 0,
+            "to_call": 0,
+            "stack": 195,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "check",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 0,
+            "street": 1,
+            "board": [
+              "Jc",
+              "Ah",
+              "7s"
+            ],
+            "position": "HJ",
+            "pot": 11,
+            "bet": 0,
+            "to_call": 0,
+            "stack": 195,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "raise",
+            "amount": 6,
+            "target": 6,
+            "effective_amount": 6
+          },
+          {
+            "actor": 4,
+            "street": 1,
+            "board": [
+              "Jc",
+              "Ah",
+              "7s"
+            ],
+            "position": "BB",
+            "pot": 17,
+            "bet": 6,
+            "to_call": 6,
+            "stack": 195,
+            "street_bet": 0,
+            "raises": 1,
+            "kind": "call",
+            "amount": 6,
+            "target": null,
+            "effective_amount": 6
+          },
+          {
+            "actor": 4,
+            "street": 2,
+            "board": [
+              "Jc",
+              "Ah",
+              "7s",
+              "5c"
+            ],
+            "position": "BB",
+            "pot": 23,
+            "bet": 0,
+            "to_call": 0,
+            "stack": 189,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "check",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 0,
+            "street": 2,
+            "board": [
+              "Jc",
+              "Ah",
+              "7s",
+              "5c"
+            ],
+            "position": "HJ",
+            "pot": 23,
+            "bet": 0,
+            "to_call": 0,
+            "stack": 189,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "raise",
+            "amount": 12,
+            "target": 12,
+            "effective_amount": 12
+          },
+          {
+            "actor": 4,
+            "street": 2,
+            "board": [
+              "Jc",
+              "Ah",
+              "7s",
+              "5c"
+            ],
+            "position": "BB",
+            "pot": 35,
+            "bet": 12,
+            "to_call": 12,
+            "stack": 189,
+            "street_bet": 0,
+            "raises": 1,
+            "kind": "call",
+            "amount": 12,
+            "target": null,
+            "effective_amount": 12
+          },
+          {
+            "actor": 4,
+            "street": 3,
+            "board": [
+              "Jc",
+              "Ah",
+              "7s",
+              "5c",
+              "6h"
+            ],
+            "position": "BB",
+            "pot": 47,
+            "bet": 0,
+            "to_call": 0,
+            "stack": 177,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "raise",
+            "amount": 24,
+            "target": 24,
+            "effective_amount": 24
+          }
+        ]
+      }
+    },
+    {
+      "id": "river-j7-fragile-raise",
+      "hand": 977,
+      "category": "River response mismatch",
+      "review": "Two pair facing three barrels: do not require a fragile raise-fold plan.",
+      "observation": {
+        "n": 6,
+        "button": 4,
+        "sb": 5,
+        "bb_seat": 0,
+        "actor": 0,
+        "street": 3,
+        "current_bet": 24,
+        "last_full_raise": 24,
+        "acted_at": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          24
+        ],
+        "pending": [
+          0
+        ],
+        "done": false,
+        "players": [
+          {
+            "stack": 176,
+            "street_bet": 0,
+            "contributed": 24,
+            "folded": false,
+            "last_action": ""
+          },
+          {
+            "stack": 200,
+            "street_bet": 0,
+            "contributed": 0,
+            "folded": true,
+            "last_action": "Fold"
+          },
+          {
+            "stack": 200,
+            "street_bet": 0,
+            "contributed": 0,
+            "folded": true,
+            "last_action": "Fold"
+          },
+          {
+            "stack": 200,
+            "street_bet": 0,
+            "contributed": 0,
+            "folded": true,
+            "last_action": "Fold"
+          },
+          {
+            "stack": 200,
+            "street_bet": 0,
+            "contributed": 0,
+            "folded": true,
+            "last_action": "Fold"
+          },
+          {
+            "stack": 152,
+            "street_bet": 24,
+            "contributed": 48,
+            "folded": false,
+            "last_action": "Bet 12"
+          }
+        ],
+        "holes": [
+          [
+            "Jh",
+            "7d"
+          ],
+          [],
+          [],
+          [],
+          [],
+          []
+        ],
+        "board": [
+          "9h",
+          "2h",
+          "Jc",
+          "Kd",
+          "7s"
+        ],
+        "history": [
+          {
+            "actor": 1,
+            "street": 0,
+            "board": [],
+            "position": "UTG",
+            "pot": 3,
+            "bet": 2,
+            "to_call": 2,
+            "stack": 200,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 2,
+            "street": 0,
+            "board": [],
+            "position": "HJ",
+            "pot": 3,
+            "bet": 2,
+            "to_call": 2,
+            "stack": 200,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 3,
+            "street": 0,
+            "board": [],
+            "position": "CO",
+            "pot": 3,
+            "bet": 2,
+            "to_call": 2,
+            "stack": 200,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 4,
+            "street": 0,
+            "board": [],
+            "position": "BTN",
+            "pot": 3,
+            "bet": 2,
+            "to_call": 2,
+            "stack": 200,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 5,
+            "street": 0,
+            "board": [],
+            "position": "SB",
+            "pot": 3,
+            "bet": 2,
+            "to_call": 1,
+            "stack": 199,
+            "street_bet": 1,
+            "raises": 0,
+            "kind": "raise",
+            "amount": 5,
+            "target": 6,
+            "effective_amount": 5
+          },
+          {
+            "actor": 0,
+            "street": 0,
+            "board": [],
+            "position": "BB",
+            "pot": 8,
+            "bet": 6,
+            "to_call": 4,
+            "stack": 198,
+            "street_bet": 2,
+            "raises": 1,
+            "kind": "call",
+            "amount": 4,
+            "target": null,
+            "effective_amount": 4
+          },
+          {
+            "actor": 5,
+            "street": 1,
+            "board": [
+              "9h",
+              "2h",
+              "Jc"
+            ],
+            "position": "SB",
+            "pot": 12,
+            "bet": 0,
+            "to_call": 0,
+            "stack": 194,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "raise",
+            "amount": 6,
+            "target": 6,
+            "effective_amount": 6
+          },
+          {
+            "actor": 0,
+            "street": 1,
+            "board": [
+              "9h",
+              "2h",
+              "Jc"
+            ],
+            "position": "BB",
+            "pot": 18,
+            "bet": 6,
+            "to_call": 6,
+            "stack": 194,
+            "street_bet": 0,
+            "raises": 1,
+            "kind": "call",
+            "amount": 6,
+            "target": null,
+            "effective_amount": 6
+          },
+          {
+            "actor": 5,
+            "street": 2,
+            "board": [
+              "9h",
+              "2h",
+              "Jc",
+              "Kd"
+            ],
+            "position": "SB",
+            "pot": 24,
+            "bet": 0,
+            "to_call": 0,
+            "stack": 188,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "raise",
+            "amount": 12,
+            "target": 12,
+            "effective_amount": 12
+          },
+          {
+            "actor": 0,
+            "street": 2,
+            "board": [
+              "9h",
+              "2h",
+              "Jc",
+              "Kd"
+            ],
+            "position": "BB",
+            "pot": 36,
+            "bet": 12,
+            "to_call": 12,
+            "stack": 188,
+            "street_bet": 0,
+            "raises": 1,
+            "kind": "call",
+            "amount": 12,
+            "target": null,
+            "effective_amount": 12
+          },
+          {
+            "actor": 5,
+            "street": 3,
+            "board": [
+              "9h",
+              "2h",
+              "Jc",
+              "Kd",
+              "7s"
+            ],
+            "position": "SB",
+            "pot": 48,
+            "bet": 0,
+            "to_call": 0,
+            "stack": 176,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "raise",
+            "amount": 24,
+            "target": 24,
+            "effective_amount": 24
+          }
+        ]
+      }
+    },
+    {
+      "id": "river-j8-fragile-sizing",
+      "hand": 991,
+      "category": "River response mismatch",
+      "review": "Rivered two pair: stress the large raise-fold size against frequent bot reraises; keep calling acceptable.",
+      "observation": {
+        "n": 6,
+        "button": 0,
+        "sb": 1,
+        "bb_seat": 2,
+        "actor": 0,
+        "street": 3,
+        "current_bet": 12,
+        "last_full_raise": 12,
+        "acted_at": [
+          null,
+          null,
+          12,
+          null,
+          null,
+          null
+        ],
+        "pending": [
+          0
+        ],
+        "done": false,
+        "players": [
+          {
+            "stack": 189,
+            "street_bet": 0,
+            "contributed": 11,
+            "folded": false,
+            "last_action": ""
+          },
+          {
+            "stack": 199,
+            "street_bet": 0,
+            "contributed": 1,
+            "folded": true,
+            "last_action": "Fold"
+          },
+          {
+            "stack": 177,
+            "street_bet": 12,
+            "contributed": 23,
+            "folded": false,
+            "last_action": "Bet 6"
+          },
+          {
+            "stack": 200,
+            "street_bet": 0,
+            "contributed": 0,
+            "folded": true,
+            "last_action": "Fold"
+          },
+          {
+            "stack": 200,
+            "street_bet": 0,
+            "contributed": 0,
+            "folded": true,
+            "last_action": "Fold"
+          },
+          {
+            "stack": 200,
+            "street_bet": 0,
+            "contributed": 0,
+            "folded": true,
+            "last_action": "Fold"
+          }
+        ],
+        "holes": [
+          [
+            "Jd",
+            "8c"
+          ],
+          [],
+          [],
+          [],
+          [],
+          []
+        ],
+        "board": [
+          "7c",
+          "Qs",
+          "Jc",
+          "5h",
+          "8d"
+        ],
+        "history": [
+          {
+            "actor": 3,
+            "street": 0,
+            "board": [],
+            "position": "UTG",
+            "pot": 3,
+            "bet": 2,
+            "to_call": 2,
+            "stack": 200,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 4,
+            "street": 0,
+            "board": [],
+            "position": "HJ",
+            "pot": 3,
+            "bet": 2,
+            "to_call": 2,
+            "stack": 200,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 5,
+            "street": 0,
+            "board": [],
+            "position": "CO",
+            "pot": 3,
+            "bet": 2,
+            "to_call": 2,
+            "stack": 200,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 0,
+            "street": 0,
+            "board": [],
+            "position": "BTN",
+            "pot": 3,
+            "bet": 2,
+            "to_call": 2,
+            "stack": 200,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "raise",
+            "amount": 5,
+            "target": 5,
+            "effective_amount": 5
+          },
+          {
+            "actor": 1,
+            "street": 0,
+            "board": [],
+            "position": "SB",
+            "pot": 8,
+            "bet": 5,
+            "to_call": 4,
+            "stack": 199,
+            "street_bet": 1,
+            "raises": 1,
+            "kind": "fold",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 2,
+            "street": 0,
+            "board": [],
+            "position": "BB",
+            "pot": 8,
+            "bet": 5,
+            "to_call": 3,
+            "stack": 198,
+            "street_bet": 2,
+            "raises": 1,
+            "kind": "call",
+            "amount": 3,
+            "target": null,
+            "effective_amount": 3
+          },
+          {
+            "actor": 2,
+            "street": 1,
+            "board": [
+              "7c",
+              "Qs",
+              "Jc"
+            ],
+            "position": "BB",
+            "pot": 11,
+            "bet": 0,
+            "to_call": 0,
+            "stack": 195,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "raise",
+            "amount": 6,
+            "target": 6,
+            "effective_amount": 6
+          },
+          {
+            "actor": 0,
+            "street": 1,
+            "board": [
+              "7c",
+              "Qs",
+              "Jc"
+            ],
+            "position": "BTN",
+            "pot": 17,
+            "bet": 6,
+            "to_call": 6,
+            "stack": 195,
+            "street_bet": 0,
+            "raises": 1,
+            "kind": "call",
+            "amount": 6,
+            "target": null,
+            "effective_amount": 6
+          },
+          {
+            "actor": 2,
+            "street": 2,
+            "board": [
+              "7c",
+              "Qs",
+              "Jc",
+              "5h"
+            ],
+            "position": "BB",
+            "pot": 23,
+            "bet": 0,
+            "to_call": 0,
+            "stack": 189,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "check",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 0,
+            "street": 2,
+            "board": [
+              "7c",
+              "Qs",
+              "Jc",
+              "5h"
+            ],
+            "position": "BTN",
+            "pot": 23,
+            "bet": 0,
+            "to_call": 0,
+            "stack": 189,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "check",
+            "amount": 0,
+            "target": null,
+            "effective_amount": 0
+          },
+          {
+            "actor": 2,
+            "street": 3,
+            "board": [
+              "7c",
+              "Qs",
+              "Jc",
+              "5h",
+              "8d"
+            ],
+            "position": "BB",
+            "pot": 23,
+            "bet": 0,
+            "to_call": 0,
+            "stack": 189,
+            "street_bet": 0,
+            "raises": 0,
+            "kind": "raise",
+            "amount": 12,
+            "target": 12,
+            "effective_amount": 12
+          }
+        ]
+      }
     }
   ]
 }

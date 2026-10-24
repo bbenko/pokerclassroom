@@ -1,7 +1,8 @@
 /* Calculations stay off the UI thread. No requests to a game server. */
 'use strict';
-importScripts('./engine.js');
+importScripts('./engine.js','./performance.js');
 let trainer;
+const readPerformance=PokerPerformance.createSessionReader();
 self.onmessage = ({data: {id, path, body = {}}}) => {
   try {
     let state, warning;
@@ -22,6 +23,7 @@ self.onmessage = ({data: {id, path, body = {}}}) => {
         trainer.hints = body.enabled; state = trainer.state();
       } else throw Error('Unknown table action.');
     }
+    state.performance=readPerformance(trainer);
     self.postMessage({id, state, saved: trainer.snapshot(), warning});
   } catch (error) { self.postMessage({id, error: error.message}); }
 };

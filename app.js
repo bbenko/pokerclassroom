@@ -82,12 +82,19 @@ function seats(data){
 }
 
 function paragraph(parent,value,cls=''){const p=document.createElement('p');p.textContent=value;p.className=cls;parent.append(p);return p}
+function reviewGrade(report){
+  return report.review || (report.correct
+    ? report.confidence==='close' ? {level:'close',label:'Close',explanation:'Both reasonable.'} : {level:'good',label:'Good',explanation:'Matches an accepted action.'}
+    : {level:'mistake',label:'Mistake',explanation:report.reason});
+}
+function gradeClass(grade){return grade.level==='close'?'neutral':grade.level==='good'?'good':'bad'}
 function review(report,hint=false){
   const el=$('review');el.replaceChildren();
   if(!report){text('review-title','Decision review');paragraph(el,'Your choices will appear here.');return}
   text('review-title',hint?'Coach':'Decision review');
   if(!hint){
-    paragraph(el,report.correct?(report.confidence==='close'?'≈ Both reasonable':'✓ Good choice'):'✕ Review this choice','grade '+(report.correct?'good':'bad'));
+    const grade=reviewGrade(report);
+    paragraph(el,grade.label,'grade review-badge '+gradeClass(grade));
     paragraph(el,'You chose '+(report.chosen_label||report.chosen),'choice-pill '+(report.correct?'good':'bad'));
   }
   const line=document.createElement('div');line.className='recommendation';
@@ -152,11 +159,11 @@ function renderChoice(data){
   }
   const report=data.feedback[0];
   if(!report)return;
-  const close=report.correct&&report.confidence==='close';
-  const el=document.createElement('div');el.className='choice-feedback '+(close?'neutral':report.correct?'good':'bad');container.append(el);
+  const grade=reviewGrade(report),close=grade.level==='close';
+  const el=document.createElement('div');el.className='choice-feedback '+gradeClass(grade);container.append(el);
   const icon=document.createElement('span');icon.className='outcome-icon';icon.textContent=close?'≈':report.correct?'✓':'✕';
   const chosen=document.createElement('span');chosen.textContent=report.street+' · You chose '+(report.chosen_label||report.chosen);
-  const outcome=document.createElement('strong');outcome.textContent=close?'Both reasonable':report.correct?'Good choice':'Better: '+report.display;
+  const outcome=document.createElement('strong');outcome.textContent=grade.label;outcome.title=grade.explanation;
   el.append(icon,chosen,outcome);
 }
 
@@ -190,13 +197,38 @@ function renderRaisePresets(data){
   updateRaiseSelection();
 }
 
+function renderPerformance(performance){
+  const p=performance||{count:0,netBB:null,winRate:null,vpip:null,pfr:null};
+  const signed=n=>(n>0?'+':'')+fmt(n);
+  for(const [id,value,isSigned] of [['profit',p.netBB,true],['win-rate',p.winRate,true],['vpip',p.vpip,false],['pfr',p.pfr,false]]){
+    const el=$('performance-'+id);
+    el.textContent=value===null?'—':isSigned?signed(value):fmt(value);
+    el.classList.toggle('positive',isSigned&&value>0);el.classList.toggle('negative',isSigned&&value<0);
+  }
+  text('performance-count',fmt(p.count)+' completed '+(p.count===1?'hand':'hands'));
+  text('performance-vpip-count',p.count?fmt(p.vpipHands)+' of '+fmt(p.count)+' hands':'Voluntary preflop investment');
+  text('performance-pfr-count',p.count?fmt(p.pfrHands)+' of '+fmt(p.count)+' hands':'Raised or reraised preflop');
+  text('performance-note',!p.count?'Finish a hand to start tracking your results.':
+    (p.count<100?'Small sample: a few pots can move your win rate sharply.':'Poker results vary widely. These observations do not establish skill or predict future results.'));
+  const issues=[];
+  if(p.unreadable)issues.push(fmt(p.unreadable)+' saved '+(p.unreadable===1?'history could':'histories could')+' not be read and '+(p.unreadable===1?'was':'were')+' excluded.');
+  if(p.duplicates)issues.push(fmt(p.duplicates)+' duplicate '+(p.duplicates===1?'history was':'histories were')+' counted only once.');
+  text('performance-warning',issues.join(' '));$('performance-warning').hidden=!issues.length;
+}
+
 function render(data){
+  renderPerformance(data.performance);
   state=data;text('hands',data.hand_number||0);text('decisions',data.stats.decisions);
   text('accuracy',data.stats.accuracy===null?'—':data.stats.accuracy+'%');
   $('hints').checked=data.hints;$('stack-mode').value=data.stack_mode;$('stack-mode').disabled=data.started&&!data.done;
   $('welcome').hidden=data.started;$('game').hidden=!data.started;
   $('action-area').hidden=!data.started;$('history').hidden=!data.started;
-  if(!data.started){text('start',data.hand_number?'Deal next hand':'Deal your first hand');$('range-panel').hidden=true;$('recap-panel').hidden=true;return}
+  if(!data.started){
+    $('history').open=false;
+    text('start',data.hand_number?'Deal next hand':'Deal your first hand');
+    $('range-panel').hidden=true;$('recap-panel').hidden=true;
+    return;
+  }
   cards($('board'),data.board,5);
   highlightWinningCards($('board'),data.board,data.seats.flatMap(seat=>seat.winning_cards||[]));
   seats(data);text('pot',fmt(data.pot)+' BB');
@@ -213,6 +245,7 @@ function render(data){
   text('pass',!data.done&&!l.check?'Call '+fmt(l.call)+' BB':'Check');
   text('raise',data.current_bet===0?'Bet':'Raise');
   $('sizing').hidden=data.done||!l.raise;$('next').hidden=!data.done;
+  $('sizing').parentElement.hidden=data.done||!l.raise;
   if(!data.done){
     $('fold').disabled=!l.fold;
     $('pass').disabled=!(l.check||l.call>0);
@@ -238,9 +271,10 @@ function render(data){
   renderChoice(data);review(data.coach||data.feedback[0],!!data.coach);renderRange(data);
   const previous=$('previous');previous.replaceChildren();
   for(const entry of data.feedback.slice(data.coach?0:1,4)){
-    const row=document.createElement('div');row.className='previous '+(entry.correct?'good':'bad');
+    const entryGrade=reviewGrade(entry);
+    const row=document.createElement('div');row.className='previous '+gradeClass(entryGrade);
     const chosen=document.createElement('span');chosen.textContent=entry.street+' · '+(entry.chosen_label||entry.chosen);
-    const grade=document.createElement('strong');grade.textContent=entry.correct?'✓':'✕ '+entry.display;
+    const grade=document.createElement('strong');grade.textContent=entryGrade.label;
     row.append(chosen,grade);previous.append(row);
   }
   const awards=$('awards');awards.replaceChildren();
@@ -381,7 +415,7 @@ $('start').onclick=$('next').onclick=()=>request('new',{stack_mode:$('stack-mode
 
 document.addEventListener('keydown',event=>{
   if(event.repeat||event.isComposing||event.ctrlKey||event.metaKey||event.altKey||event.shiftKey||busy||!state||!state.started)return;
-  if(event.target.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="textbox"],[role="dialog"],dialog'))return;
+  if(event.target.closest('input,textarea,select,summary,a,[contenteditable]:not([contenteditable="false"]),[role="textbox"],[role="dialog"],dialog'))return;
   const focusedButton=event.target.closest('button');
   if(focusedButton&&!['fold','pass','raise','next'].includes(focusedButton.id))return;
   const id=state.done?([' ','Escape','Enter'].includes(event.key)?'next':null):{Escape:'fold',' ':'pass',Enter:'raise'}[event.key];
@@ -390,3 +424,35 @@ document.addEventListener('keydown',event=>{
   if(button.disabled||button.hidden||$('action-area').hidden)return;
   event.preventDefault();button.click();
 });
+
+// Keep coaching and its opening range together above history on narrow screens.
+if(window.matchMedia){
+  const narrowLayout=window.matchMedia('(max-width:800px)');
+  const decisionPanel=$('decision-panel'),rangePanel=$('range-panel');
+  const reviewSidebar=decisionPanel.parentElement;
+  function positionCoachPanels(){
+    if(narrowLayout.matches)$('history').before(decisionPanel,rangePanel);
+    else reviewSidebar.prepend(decisionPanel,rangePanel);
+  }
+  narrowLayout.addEventListener('change',positionCoachPanels);
+  positionCoachPanels();
+}
+
+// Compact stat definitions also work with a keyboard and on touch screens.
+const statButtons=[...document.querySelectorAll('.stats .stat')];
+function closeStat(button){button.setAttribute('aria-expanded','false');$(button.getAttribute('aria-controls')).hidden=true;delete button.dataset.pinned;}
+function openStat(button){for(const other of statButtons)if(other!==button)closeStat(other);button.setAttribute('aria-expanded','true');$(button.getAttribute('aria-controls')).hidden=false;}
+for(const button of statButtons){
+  button.addEventListener('pointerenter',event=>{if(event.pointerType!=='touch')openStat(button)});
+  button.addEventListener('pointerleave',()=>{if(document.activeElement!==button&&!button.dataset.pinned)closeStat(button)});
+  button.addEventListener('focus',()=>openStat(button));
+  button.addEventListener('blur',()=>closeStat(button));
+  button.addEventListener('click',()=>{if(button.dataset.pinned)closeStat(button);else{openStat(button);button.dataset.pinned='true'}});
+}
+document.addEventListener('pointerdown',event=>{if(!event.target.closest('.stats .stat'))statButtons.forEach(closeStat)});
+
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&statButtons.some(button=>button.getAttribute('aria-expanded')==='true')){
+    statButtons.forEach(closeStat);event.preventDefault();event.stopImmediatePropagation();
+  }
+},true);

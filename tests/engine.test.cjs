@@ -191,3 +191,84 @@ test('empty and finished sessions restore, corrupt saves fail', () => {
   for(const bad of [null,{}, {version:2,trainer:{}}, {version:1,trainer:{}}])assert.throws(()=>Trainer.restore(bad));
   const bad=t.snapshot();bad.trainer.hand.players[0].stack++;assert.throws(()=>Trainer.restore(bad));
 });
+
+test('unopened SB uses a wide chart and 3 BB sizing, while isolation stays tighter', () => {
+  const chart = opening_range('SB');
+  assert.equal(chart.raise_percent, 47.5);
+  assert.ok(chart.raise_combos > opening_range('BTN').raise_combos);
+  for (const hole of ['2c 2d', 'Ac 2d', 'Kc 2c', 'Qc 7c', 'Jc 7c']) {
+    const h = hand();
+    while (h.position(h.actor) !== 'SB') h.action('fold');
+    h.holes[h.actor] = cards(hole);
+    const result = advice(h, h.actor, 40, new Random(9));
+    assert.equal(result.action, 'raise', hole);
+    assert.equal(result.target, 3);
+    assert.equal(result.range.raise_percent, chart.raise_percent);
+    assert.equal(result.range.cells.find(c => c.hand === hand_class(cards(hole))).raise, true);
+  }
+  assert.equal(opening_hand(cards('7c 2d'), 'SB'), false);
+  const h = hand(); h.action('call');
+  while (h.position(h.actor) !== 'SB') h.action('fold');
+  h.holes[h.actor] = cards('Ac 2d');
+  const result = advice(h, h.actor, 40, new Random(9));
+  assert.equal(result.action, 'fold');
+  assert.equal(result.range.raise_percent, 26.7);
+  assert.equal(result.range.title, 'SB isolation range');
+});
+
+test('six-max unopened charts use the agreed baseline and preserve isolation', () => {
+  const cases = [
+    ['UTG', 236, 118, 'Ac 2c', 'Kc 8c'],
+    ['HJ', 302, 156, 'Kc Td', 'Ac 9d'],
+    ['CO', 402, 260, 'Ac 8d', 'Qc 9d'],
+    ['BTN', 594, 390, 'Qc 2c', 'Kc 7d'],
+    ['SB', 630, 354, 'Kc 7d', '7c 2d']
+  ];
+  for (const [position, combos, isolationCombos, included, excluded] of cases) {
+    const chart = opening_range(position);
+    assert.equal(chart.raise_combos, combos, position);
+    assert.equal(opening_range(position, true).raise_combos, isolationCombos);
+    assert.equal(opening_hand(cards(excluded), position), false);
+    const h = hand();
+    while (h.position(h.actor) !== position) h.action('fold');
+    h.holes[h.actor] = cards(included);
+    const result = advice(h, h.actor, 40, new Random(9));
+    assert.equal(result.action, 'raise', position);
+    assert.equal(result.target, position === 'SB' ? 3 : 2.5);
+    assert.equal(result.range.raise_combos, combos);
+    assert.equal(result.range.cells.find(c => c.hand === hand_class(cards(included))).raise, true);
+  }
+});
+
+test('bots never turn an unopened chart raise into a limp, including SB', () => {
+  for (const position of ['UTG', 'SB']) {
+    let h;
+    for (let seed = 0; seed < 1000; seed++) {
+      const candidate = new Hand(new Random(seed));
+      while (candidate.position(candidate.actor) !== position) candidate.action('fold');
+      if (opening_hand(candidate.holes[candidate.actor], position)) { h = candidate; break; }
+    }
+    assert.ok(h);
+    const t = new Trainer(0, 40); t.hand = h;
+    // Force the random passive substitution whenever it is allowed.
+    t.bot_rng.random = () => 0;
+    t._advance();
+    const firstEntry = h.history.find(e => e.kind !== 'fold');
+    assert.equal(firstEntry.position, position);
+    assert.equal(firstEntry.kind, 'raise');
+    assert.equal((firstEntry.street_bet + firstEntry.amount) / 2, position === 'SB' ? 3 : 2.5);
+  }
+});
+
+test('bots retain passive variation when raising over an existing limper', () => {
+  let h;
+  for (let seed = 0; seed < 1000; seed++) {
+    const candidate = new Hand(new Random(seed)); candidate.action('call');
+    if (opening_hand(candidate.holes[candidate.actor], 'HJ', true)) { h = candidate; break; }
+  }
+  assert.ok(h);
+  const t = new Trainer(0, 40); t.hand = h; t.bot_rng.random = () => 0;
+  t._advance();
+  assert.equal(h.history[1].position, 'HJ');
+  assert.equal(h.history[1].kind, 'call');
+});

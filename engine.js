@@ -325,8 +325,19 @@ class Hand {
     if (!this.done) assert(this.pending.has(this.actor) && this.players[this.actor].stack > 0 && !this.players[this.actor].folded);
   }
 }
-function opening_hand(hole, position) {
+// Deterministic six-max, ~100 BB raise-first-in baselines. See docs/coach-policy.md.
+const OPENING_CHARTS = {
+  UTG: {pair: 5, suited: {14: 2, 13: 9, 12: 9, 11: 9, 10: 9, 9: 8}, offsuit: {14: 10, 13: 11, 12: 11}},
+  HJ: {pair: 4, suited: {14: 2, 13: 8, 12: 8, 11: 8, 10: 8, 9: 8, 8: 7, 7: 6}, offsuit: {14: 10, 13: 10, 12: 10, 11: 10}},
+  CO: {pair: 2, suited: {14: 2, 13: 5, 12: 6, 11: 7, 10: 8, 9: 7, 8: 6, 7: 6, 6: 5, 5: 4}, offsuit: {14: 8, 13: 9, 12: 10, 11: 9}},
+  BTN: {pair: 2, suited: {14: 2, 13: 2, 12: 2, 11: 5, 10: 6, 9: 6, 8: 5, 7: 5, 6: 4, 5: 4}, offsuit: {14: 2, 13: 8, 12: 9, 11: 8, 10: 8}},
+  SB: {pair: 2, suited: {14: 2, 13: 2, 12: 2, 11: 5, 10: 6, 9: 6, 8: 5, 7: 5, 6: 4, 5: 4}, offsuit: {14: 2, 13: 7, 12: 8, 11: 8, 10: 8, 9: 8}}
+};
+function opening_hand(hole, position, isolation = false) {
   const [high, low] = hole.map(c => RANKS.indexOf(c[0]) + 2).sort((a, b) => b - a), suited = hole[0][1] === hole[1][1];
+  const chart = !isolation && OPENING_CHARTS[position];
+  if (chart) return high === low ? high >= chart.pair : low >= ((suited ? chart.suited : chart.offsuit)[high] ?? Infinity);
+  // Keep the existing, tighter isolation charts when someone has limped.
   if (high === low) return high >= ({UTG: 6, HJ: 5, CO: 3, BTN: 2, SB: 4, BB: 10}[position] ?? 5);
   if (position === 'UTG') return (suited && ((high === 14 && low >= 10) || (high === 13 && low >= 11) || (high === 12 && low === 11))) || (high === 14 && low >= 12) || (high === 13 && low === 12);
   if (position === 'HJ') return (suited && ((high === 14 && low >= 8) || (high === 13 && low >= 10) || (high === 12 && low >= 10) || (high === 11 && low === 10))) || (high === 14 && low >= 11) || (high === 13 && low === 12);
@@ -340,15 +351,22 @@ function hand_class(hole) {
   const [high, low] = hole.map(c => c[0]).sort((a, b) => RANKS.indexOf(b) - RANKS.indexOf(a));
   return high === low ? high + low : high + low + (hole[0][1] === hole[1][1] ? 's' : 'o');
 }
-function opening_range(position) {
+function opening_range(position, isolation = false) {
   if (!['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'].includes(position)) throw Error('Choose a six-seat position.');
   const ranks = [...RANKS].reverse().join(''), cells = [];
   [...ranks].forEach((first, row) => [...ranks].forEach((second, column) => {
     const hole = [first + 'c', second + (row < column ? 'c' : 'd')];
-    cells.push({hand: hand_class(hole), raise: opening_hand(hole, position), combos: row === column ? 6 : row < column ? 4 : 12});
+    cells.push({hand: hand_class(hole), raise: opening_hand(hole, position, isolation), combos: row === column ? 6 : row < column ? 4 : 12});
   }));
   const raise_combos = sum(cells.filter(c => c.raise).map(c => c.combos));
-  return {position, title: `${position} ${position === 'BB' ? 'isolation' : 'opening'} range`, ranks, cells, raise_combos, raise_percent: round1(100 * raise_combos / 1326)};
+  return {position, title: `${position} ${position === 'BB' || isolation ? 'isolation' : 'opening'} range`, ranks, cells, raise_combos, raise_percent: round1(100 * raise_combos / 1326)};
+}
+function preflop_limpers(hand, who) {
+  return hand.players.filter((p, i) => i !== who && i !== hand.bb_seat && !p.folded && p.street_bet >= 2).length;
+}
+function entry_size(hand, who) {
+  const limpers = preflop_limpers(hand, who);
+  return !limpers && hand.position(who) === 'SB' ? 6 : 5 + 2 * limpers;
 }
 function opponent_advice(hand, who, samples, rng) {
   if (hand.actor !== who || hand.done) throw Error('Advice requires an active decision for this player.');
@@ -358,7 +376,7 @@ function opponent_advice(hand, who, samples, rng) {
   const odds = call && contestable_after ? call / contestable_after : 0, facing = call > 0, position = hand.position(who);
   let action, accepted, reason;
   if (hand.street === 0 && hand.current_bet <= 2) {
-    if (legal.raise && opening_hand(hand.holes[who], position)) {
+    if (legal.raise && opening_hand(hand.holes[who], position, preflop_limpers(hand, who) > 0)) {
       action = 'raise'; accepted = ['raise']; reason = `This hand qualifies for the trainer's ${position} opening or isolation range. Use position to enter with a raise.`;
     } else if (legal.check) {
       action = 'check'; accepted = ['check']; reason = 'Keep the free big-blind option with a hand outside the isolation range.';
@@ -391,8 +409,7 @@ function opponent_advice(hand, who, samples, rng) {
   if (legal.raise) {
     let wanted;
     if (hand.street === 0 && hand.current_bet <= 2) {
-      const limpers = hand.players.filter((p, i) => i !== who && i !== hand.bb_seat && !p.folded && p.street_bet >= 2).length;
-      wanted = 5 + 2 * limpers;
+      wanted = entry_size(hand, who);
     } else if (facing) wanted = 3 * hand.current_bet;
     else wanted = Math.max(2, roundEven(hand.pot * 0.5));
     target = Math.max(legal.min_to * 2, Math.min(wanted, legal.max_to * 2));
@@ -401,7 +418,7 @@ function opponent_advice(hand, who, samples, rng) {
     display: action === 'raise' ? `${hand.current_bet === 0 ? 'Bet' : 'Raise'} to ${bb(target)} BB` : capitalize(action),
     equity: round1(eq * 100), pot_odds: round1(odds * 100), reason, samples, opponents, position,
     basis: 'Monte Carlo share against all remaining random hands; positional and equity heuristics, not GTO.',
-    range: hand.street === 0 && hand.current_bet <= 2 && legal.raise && hand.n === 6 ? {...opening_range(position), current_hand: hand_class(hand.holes[who])} : null};
+    range: hand.street === 0 && hand.current_bet <= 2 && legal.raise && hand.n === 6 ? {...opening_range(position, preflop_limpers(hand, who) > 0), current_hand: hand_class(hand.holes[who])} : null};
 }
 // Likelihoods are explicit training assumptions, not solved ranges.
 const COACH_VERSION = 'ranges-v1';
@@ -453,7 +470,7 @@ function action_likelihood(pair, event, known_hole, model = 'balanced') {
   if (event.street === 0) {
     const strength = preflop_strength(pair), facing = event.to_call > 0;
     if (event.kind === 'check') return 0.9;
-    if (event.kind === 'raise' && event.raises === 0) return opening_hand(pair, event.position) ? 0.85 : 0.025;
+    if (event.kind === 'raise' && event.raises === 0) return opening_hand(pair, event.position, event.pot > 3) ? 0.85 : 0.025;
     if (event.kind === 'raise') {
       const threshold = 0.81 + Math.min(0.13, Math.max(0, event.raises - 1) * 0.065) + shift;
       const suited_ace = pair[0][1] === pair[1][1] && pair.some(c => c[0] === 'A');
@@ -495,7 +512,7 @@ function opponent_range(hand, who, opponent, model = 'balanced', continuing = fa
     // Stress range composition, not just the overall calling threshold.
     // Public actions may leave more slow-played strong hands than the
     // baseline likelihoods assume. Never consult the opponent's real cards.
-    if (model === 'value-heavy' && hand.street === 3 && rankCards(pair.concat(hand.board))[0] >= 3) weight *= 3;
+    if (['value-heavy', 'cautious'].includes(model) && hand.street === 3 && rankCards(pair.concat(hand.board))[0] >= 3) weight *= 3;
     if (continuing) {
       if (!hand.street) weight *= 0.01 + sigmoid(preflop_strength(pair) - 0.84, 32);
       else {
@@ -554,9 +571,56 @@ function range_equity(hand, who, samples, rng, model = 'balanced', continuing = 
   const draw = range_scenarios(hand, who, samples, rng, model, continuing);
   return {...scenario_equity(hand, who, draw.scenarios), ...draw};
 }
+const RIVER_STRESS_MODELS = ['tight', 'loose', 'sticky', 'value-heavy', 'cautious', 'bot-policy'];
+const BOT_RIVER_SAMPLES = 53, BOT_PASSIVE_RATE = 0.12;
+const BOT_RIVER_TOTAL = 2 * BOT_RIVER_SAMPLES;
+const bot_river_cache = new Map();
+function bot_river_distribution(pair, board) {
+  // The bot samples 53 random opponents on a heads-up river. Enumerate its
+  // possible sample totals (wins=2, ties=1) rather than adding Monte Carlo noise.
+  const key = board.slice().sort().join('');
+  let cached = bot_river_cache.get(key);
+  if (!cached) {
+    const items = COMBOS.filter(p => !p.some(c => board.includes(c))).map(pair => ({pair, score: rank_code(pair.concat(board))}));
+    cached = {items, distributions: new Map()};
+    if (bot_river_cache.size >= 8) bot_river_cache.delete(bot_river_cache.keys().next().value);
+    bot_river_cache.set(key, cached);
+  }
+  const pairKey = pair.slice().sort().join('');
+  if (cached.distributions.has(pairKey)) return cached.distributions.get(pairKey);
+  const score = rank_code(pair.concat(board)); let wins = 0, ties = 0, count = 0;
+  for (const item of cached.items) {
+    if (item.pair.some(c => pair.includes(c))) continue;
+    count++; wins += Number(score > item.score); ties += Number(score === item.score);
+  }
+  const probabilities = [(count - wins - ties) / count, ties / count, wins / count];
+  let distribution = new Float64Array(BOT_RIVER_TOTAL + 1); distribution[0] = 1;
+  for (let sample = 0; sample < BOT_RIVER_SAMPLES; sample++) {
+    const next = new Float64Array(BOT_RIVER_TOTAL + 1);
+    for (let total = 0; total <= sample * 2; total++) for (let value = 0; value <= 2; value++) next[total + value] += distribution[total] * probabilities[value];
+    distribution = next;
+  }
+  const tail = new Float64Array(BOT_RIVER_TOTAL + 2);
+  for (let total = BOT_RIVER_TOTAL; total >= 0; total--) tail[total] = tail[total + 1] + distribution[total];
+  cached.distributions.set(pairKey, tail); return tail;
+}
 function river_response(hand, who, opponent, pair, target, model) {
   const own = hand.players[opponent], cost = Math.min(own.stack, Math.max(0, target - own.street_bet));
-  if (!cost) return {fold: 0, call: 1, shove: 0};
+  if (!cost) return {fold: 0, call: 1, reraise: 0, shove: 0};
+  const fullRaise = Math.max(hand.last_full_raise, target - hand.current_bet);
+  const reopened = hand.acted_at[opponent] == null || target - hand.acted_at[opponent] >= fullRaise;
+  const can_reraise = reopened && own.stack + own.street_bet > target && hand.players[who].stack + hand.players[who].street_bet > target;
+  const reraise_to = Math.min(own.stack + own.street_bet, Math.max(target + fullRaise, 3 * target));
+  if (model === 'bot-policy' && hand.live.length === 2) {
+    const heroCost = Math.min(hand.players[who].stack, Math.max(0, target - hand.players[who].street_bet));
+    const cap = own.contributed + cost;
+    const contestable = sum(hand.players.map((p, i) => Math.min(p.contributed + (i === who ? heroCost : 0), cap))) + cost;
+    const odds = contestable ? cost / contestable : 0;
+    const tail = bot_river_distribution(pair, hand.board);
+    const continueProbability = tail[Math.min(BOT_RIVER_TOTAL + 1, Math.ceil((odds + 0.04) * BOT_RIVER_TOTAL - 1e-9))];
+    const reraise = can_reraise ? (1 - BOT_PASSIVE_RATE) * tail[Math.ceil(Math.max(0.70, odds + 0.04) * BOT_RIVER_TOTAL - 1e-9)] : 0;
+    return {fold: Math.max(0, 1 - continueProbability), call: Math.max(0, continueProbability - reraise), reraise, shove: 0, reraise_to};
+  }
   const strength = board_metrics(hand.holes[who], hand.board).strengths.get(pair.slice().sort((a, b) => DECK.indexOf(a) - DECK.indexOf(b)).join(''));
   const raises = hand.history.filter(e => e.street === 3 && e.kind === 'raise').length + 1;
   const price = cost / Math.max(1, hand.pot + cost + Math.max(0, target - hand.players[who].street_bet));
@@ -569,9 +633,14 @@ function river_response(hand, who, opponent, pair, target, model) {
   const overbetPremium = 0.08 * Math.log2(Math.max(1, fraction));
   const threshold = Math.min(0.90, 0.50 + 0.07 * Math.min(raises, 3) + 0.25 * price - smallBetDiscount + overbetPremium + (model === 'tight' ? 0.04 : model === 'loose' ? -0.04 : model === 'sticky' ? -0.12 : 0));
   const continue_probability = 0.015 / Math.max(1, fraction) + 0.97 * sigmoid(strength - threshold, 30);
-  const can_shove = own.stack + own.street_bet > target && hand.players[who].stack + hand.players[who].street_bet > target;
-  const shove = can_shove ? continue_probability * 0.70 * sigmoid(strength - 0.975, 90) : 0;
-  return {fold: 1 - continue_probability, call: continue_probability - shove, shove};
+  const shove = can_reraise ? continue_probability * 0.70 * sigmoid(strength - 0.975, 90) : 0;
+  const normal = reraise_to < own.stack + own.street_bet ? shove / 2 : 0;
+  const call = continue_probability - shove;
+  // Stress thinner value: fewer worse hands pay, while better hands retain
+  // their responses. This is uncertainty testing, not an opponent read.
+  const weaker = model === 'cautious' && compare(rankCards(pair.concat(hand.board)), rankCards(hand.holes[who].concat(hand.board))) < 0;
+  const retainedCall = weaker ? call * 0.5 : call;
+  return {fold: 1 - continue_probability + call - retainedCall, call: retainedCall, reraise: normal, shove: shove - normal, reraise_to};
 }
 function river_payout(hand, who, contributions, folded, scores) {
   const layers = []; let previous = 0;
@@ -606,15 +675,15 @@ function river_outcome(hand, who, scenario, choice, model, forced = null) {
   const pay_to = (i, target) => { const amount = Math.min(stacks[i], Math.max(0, target - bets[i])); stacks[i] -= amount; bets[i] += amount; contributions[i] += amount; if (i === who) spent += amount; };
   if (choice.action === 'fold') return 0;
   pay_to(who, choice.action === 'raise' ? choice.target * 2 : hand.current_bet);
-  let shove_to = 0;
+  let reraise_target = 0;
   const order = Array.from({length: hand.n - 1}, (_, k) => (who + k + 1) % hand.n).filter(i => !folded.has(i) && stacks[i] > 0);
   if (choice.action === 'raise') {
     for (const i of order) {
       const response = river_response(hand, who, i, scenario.holes[i], bets[who], model);
       const u = scenario.uniforms[i];
-      const kind = forced?.opponent === i ? forced.kind : u < response.fold ? 'fold' : u < response.fold + response.call ? 'call' : 'shove';
+      const kind = forced?.opponent === i ? forced.kind : u < response.fold ? 'fold' : u < response.fold + response.call ? 'call' : u < response.fold + response.call + response.reraise ? 'reraise' : 'shove';
       if (kind === 'fold') folded.add(i);
-      else if (kind === 'shove') { shove_to = bets[i] + stacks[i]; pay_to(i, shove_to); break; }
+      else if (kind === 'shove' || kind === 'reraise') { reraise_target = kind === 'reraise' ? response.reraise_to : bets[i] + stacks[i]; pay_to(i, reraise_target); break; }
       else pay_to(i, bets[who]);
     }
   } else {
@@ -625,11 +694,11 @@ function river_outcome(hand, who, scenario, choice, model, forced = null) {
       if (scenario.uniforms[i] < response.fold) folded.add(i); else pay_to(i, hand.current_bet);
     }
   }
-  if (shove_to) {
-    if (choice.plan === 'call_reraise') pay_to(who, shove_to); else folded.add(who);
-    for (const i of order) if (!folded.has(i) && stacks[i] > 0 && bets[i] < shove_to) {
-      const response = river_response(hand, who, i, scenario.holes[i], shove_to, model);
-      if (scenario.uniforms[i] < response.fold) folded.add(i); else pay_to(i, shove_to);
+  if (reraise_target) {
+    if (choice.plan === 'call_reraise') pay_to(who, reraise_target); else folded.add(who);
+    for (const i of order) if (!folded.has(i) && stacks[i] > 0 && bets[i] < reraise_target) {
+      const response = river_response(hand, who, i, scenario.holes[i], reraise_target, model);
+      if (scenario.uniforms[i] < response.fold) folded.add(i); else pay_to(i, reraise_target);
     }
   }
   return (river_payout(hand, who, contributions, folded, scores) - spent) / 2;
@@ -654,7 +723,7 @@ function river_values(hand, who, draw, model = 'balanced') {
       if (draw.exact && choice.action === 'raise') {
         const opponent = draw.ranges[0].opponent;
         const response = river_response(hand, who, opponent, scenario.holes[opponent], choice.target * 2, model);
-        value = ['fold', 'call', 'shove'].reduce((n, kind) => n + response[kind] * river_outcome(hand, who, scenario, choice, model, {opponent, kind}), 0);
+        value = ['fold', 'call', 'reraise', 'shove'].reduce((n, kind) => n + response[kind] * river_outcome(hand, who, scenario, choice, model, {opponent, kind}), 0);
       } else value = river_outcome(hand, who, scenario, choice, model);
       ev += scenario.weight * value; second += scenario.weight * value * value;
     }
@@ -676,9 +745,9 @@ function advice(hand, who, samples, rng) {
   if (!estimate.exact && Math.abs(estimate.equity - odds - 0.04) < 2 * error) {
     used = Math.min(5000, Math.max(used, 640)); estimate = range_equity(hand, who, used, rng);
   }
-  let action, accepted, reason, target = null, values = [], sensitivity = [], confidence = 'clear';
+  let action, accepted, reason, target = null, values = [], sensitivity = [], confidence = 'clear', review_evidence = null;
   if (hand.street === 0 && hand.current_bet <= 2) {
-    action = legal.raise && opening_hand(hand.holes[who], position) ? 'raise' : legal.check ? 'check' : 'fold';
+    action = legal.raise && opening_hand(hand.holes[who], position, preflop_limpers(hand, who) > 0) ? 'raise' : legal.check ? 'check' : 'fold';
     accepted = [action];
     reason = action === 'raise' ? `Enter with the trainer's ${position} opening or isolation range.` : action === 'check' ? 'Take the free big-blind option.' : `This hand is outside the trainer's ${position} entry range.`;
   } else if (hand.street === 3) {
@@ -688,7 +757,7 @@ function advice(hand, who, samples, rng) {
     const tolerance = Math.max(0.25, bb(hand.pot) * 0.02, best.standard_error_bb * 2);
     const responseValues = [values];
     accepted = [...new Set(values.filter(v => v.ev_bb >= best.ev_bb - tolerance).map(v => v.action))];
-    for (const model of ['tight', 'loose', 'sticky', 'value-heavy']) {
+    for (const model of (opponents === 1 ? RIVER_STRESS_MODELS : RIVER_STRESS_MODELS.filter(m => m !== 'bot-policy'))) {
       const alt = range_equity(hand, who, Math.min(used, 320), rng, model);
       const alternatives = river_values(hand, who, alt, model).sort((a, b) => b.ev_bb - a.ev_bb);
       responseValues.push(alternatives);
@@ -697,6 +766,19 @@ function advice(hand, who, samples, rng) {
       for (const candidate of alternatives.filter(v => v.ev_bb >= alternatives[0].ev_bb - alternativeTolerance)) {
         if (!accepted.includes(candidate.action)) accepted.push(candidate.action);
       }
+    }
+    // Only exact heads-up river values can support the strongest review label.
+    // Score action categories using their best size/plan, never a custom sizing error.
+    if (estimate.exact && opponents === 1) {
+      const losses = {};
+      for (const candidate of new Set(values.map(v => v.action))) {
+        losses[candidate] = Math.min(...responseValues.map(modelValues => {
+          const best = modelValues.reduce((a, b) => a.ev_bb > b.ev_bb ? a : b);
+          const chosen = modelValues.filter(v => v.action === candidate).reduce((a, b) => a.ev_bb > b.ev_bb ? a : b);
+          return best.ev_bb - chosen.ev_bb - 2 * Math.hypot(best.standard_error_bb, chosen.standard_error_bb);
+        }));
+      }
+      review_evidence = {losses, threshold_bb: Math.max(2, bb(hand.pot) * 0.20), models: responseValues.length};
     }
     // Compare the SAME size and response plan across models. Picking a
     // different winning size in each model can hide a fragile recommendation.
@@ -718,7 +800,7 @@ function advice(hand, who, samples, rng) {
       }
     }
     confidence = accepted.length > 1 || sensitivity.some(v => v.action !== action) ? 'close' : 'clear';
-    reason = action === 'raise' ? `This river size improves on calling or checking across the tested range and response assumptions. Plan to ${(robustRaise || best).plan === 'call_reraise' ? 'call' : 'fold to'} a further shove.` : action === 'fold' ? 'Folding avoids a commitment that is not supported consistently by the modeled ranges and responses.' : action === 'call' ? (accepted.includes('raise') ? 'Calling keeps showdown value. A raise may work under some assumptions, but its advantage depends on uncertain calls or folds from the opponent.' : 'Calling has a better modeled return than folding or raising against the ranges likely to continue.') : (accepted.includes('raise') ? 'Checking takes the free showdown. Betting is also reasonable under some assumptions, but its advantage depends on how often the opponent calls or folds.' : 'Checking has the best modeled showdown return; a raise does not gain enough from worse continuing hands.');
+    reason = action === 'raise' ? `This river size improves on calling or checking across the tested range and response assumptions. Plan to ${(robustRaise || best).plan === 'call_reraise' ? 'call' : 'fold to'} a further raise.` : action === 'fold' ? 'Folding avoids a commitment that is not supported consistently by the modeled ranges and responses.' : action === 'call' ? (accepted.includes('raise') ? 'Calling keeps showdown value. A raise may work under some assumptions, but its advantage depends on uncertain calls or folds from the opponent.' : 'Calling has a better modeled return than folding or raising against the ranges likely to continue.') : (accepted.includes('raise') ? 'Checking takes the free showdown. Betting is also reasonable under some assumptions, but its advantage depends on how often the opponent calls or folds.' : 'Checking has the best modeled showdown return; a raise does not gain enough from worse continuing hands.');
   } else {
     const cushion = 0.04 + 0.015 * (opponents - 1), eq = estimate.equity;
     action = legal.check ? 'check' : eq >= odds + cushion ? 'call' : 'fold';
@@ -745,18 +827,27 @@ function advice(hand, who, samples, rng) {
     }
   }
   if (action === 'raise' && target === null) {
-    const limpers = hand.players.filter((p, i) => i !== who && i !== hand.bb_seat && !p.folded && p.street_bet >= 2).length;
-    const wanted = hand.street === 0 && hand.current_bet <= 2 ? 5 + 2 * limpers : call ? 3 * hand.current_bet : Math.max(2, roundEven(hand.pot * 0.5));
+    const wanted = hand.street === 0 && hand.current_bet <= 2 ? entry_size(hand, who) : call ? 3 * hand.current_bet : Math.max(2, roundEven(hand.pot * 0.5));
     target = bb(Math.max(legal.min_to * 2, Math.min(wanted, legal.max_to * 2)));
   }
-  const range = hand.street === 0 && hand.current_bet <= 2 && legal.raise && hand.n === 6 ? {...opening_range(position), current_hand: hand_class(hand.holes[who])} : null;
+  const range = hand.street === 0 && hand.current_bet <= 2 && legal.raise && hand.n === 6 ? {...opening_range(position, preflop_limpers(hand, who) > 0), current_hand: hand_class(hand.holes[who])} : null;
   return {action, accepted: accepted.sort(), target, display: action === 'raise' ? `${hand.current_bet === 0 ? 'Bet' : 'Raise'} to ${target} BB` : capitalize(action),
     equity: round1(estimate.equity * 100), pot_odds: round1(odds * 100), reason, samples: estimate.scenarios.length, requested_samples: samples,
     opponents, position, range, confidence, uncertainty_note: confidence === 'close' ? 'Reasonable range and response assumptions or sampling uncertainty allow more than one action.' : null,
-    basis: 'Equity against public-action-weighted ranges. River values use a terminal response model with folds, calls and one shove reraise; not a solver.',
+    basis: 'Equity against public-action-weighted ranges. River values use a terminal response model with folds, calls and one normal-sized or all-in reraise; not a solver.',
     model: COACH_VERSION,
     range_summary: estimate.ranges.map(r => ({seat: r.opponent, effective_combos: Math.round(r.effective_combos)})),
-    action_values: values, range_sensitivity: sensitivity};
+    action_values: values, range_sensitivity: sensitivity, review_evidence};
+}
+
+function decision_review(report, chosen) {
+  if (report.accepted.includes(chosen)) return report.confidence === 'close'
+    ? {level: 'close', label: 'Close', explanation: 'Both reasonable.'}
+    : {level: 'good', label: 'Good', explanation: 'Matches an accepted action.'};
+  const evidence = report.review_evidence;
+  if (evidence?.models === RIVER_STRESS_MODELS.length + 1 && Number.isFinite(evidence.losses[chosen]) && evidence.losses[chosen] > evidence.threshold_bb)
+    return {level: 'big-mistake', label: 'Big mistake', explanation: 'This action gives up substantial estimated value across all tested models.'};
+  return {level: 'mistake', label: 'Mistake', explanation: report.reason};
 }
 
 class Trainer {
@@ -782,7 +873,8 @@ class Trainer {
     while (!hand.done && hand.actor !== 0) {
       const report = opponent_advice(hand, hand.actor, Math.max(40, Math.floor(this.samples / 3)), this.bot_rng);
       let action = report.action;
-      if (action === 'raise' && this.bot_rng.random() < 0.12) action = hand.legal().check ? 'check' : 'call';
+      const unopenedPreflop = hand.street === 0 && hand.current_bet <= 2 && preflop_limpers(hand, hand.actor) === 0;
+      if (action === 'raise' && !unopenedPreflop && this.bot_rng.random() < BOT_PASSIVE_RATE) action = hand.legal().check ? 'check' : 'call';
       hand.action(action, action === 'raise' ? report.target * 2 : null);
       if (++actions > 2048) throw Error('Opponent action loop failed to finish.');
     }
@@ -804,7 +896,7 @@ class Trainer {
     if (hinted) this.hinted_decisions++; else { this.decisions++; this.correct += Number(ok); }
     this.feedback.unshift({...report, street, board, chosen: normalized,
       chosen_label: requested === 'allin' && normalized === 'raise' ? 'All-in' : normalized === 'raise' && was_bet ? 'Bet' : capitalize(normalized),
-      correct: ok, hinted, message: ok ? 'Matches the training policy' : 'Review this decision',
+      correct: ok, hinted, review: decision_review(report, normalized), message: ok ? 'Matches the training policy' : 'Review this decision',
       sizing_note: 'Scoring checks the action category; legal raise sizes are not graded.'});
     this.feedback = this.feedback.slice(0, 20); this._advance(); return this.state();
   }
@@ -868,7 +960,7 @@ class Trainer {
     return trainer;
   }
 }
-const api = {RANKS, DECK, NAMES, STREETS, Random, Hand, Trainer, chips, evaluate, best_five, compare, hand_name, format_history, equity, opening_hand, hand_class, opening_range, advice, opponent_advice, opponent_range, range_equity, river_values, COACH_VERSION};
+const api = {RANKS, DECK, NAMES, STREETS, Random, Hand, Trainer, chips, evaluate, best_five, compare, hand_name, format_history, equity, opening_hand, hand_class, opening_range, advice, opponent_advice, opponent_range, range_equity, river_values, river_response, decision_review, COACH_VERSION};
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 else root.PokerClassroom = api;
 })(globalThis);

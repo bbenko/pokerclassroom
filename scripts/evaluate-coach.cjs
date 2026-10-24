@@ -12,7 +12,7 @@ function evaluateCoach(out = 'evals/coach') {
     const report = advice(hand, hand.actor, 320, new Random(10000 + item.hand));
     return {id: item.id, hand: item.hand, concern: item.review,
       action: report.action, target: report.target, accepted: report.accepted, equity: report.equity, confidence: report.confidence,
-      reason: report.reason, action_values: report.action_values, range_sensitivity: report.range_sensitivity};
+      reason: report.reason, action_values: report.action_values, review_evidence: report.review_evidence, range_sensitivity: report.range_sensitivity};
   });
   fs.mkdirSync(out, {recursive: true});
   fs.writeFileSync(path.join(out, 'review-case-results.json'), JSON.stringify({model: COACH_VERSION, note: 'Public decision cases, not solver labels. Action changes alone do not prove correctness.', results}, null, 2) + '\n');

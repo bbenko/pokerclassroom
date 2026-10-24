@@ -3,6 +3,8 @@
 A six-player no-limit Texas Hold’em trainer that runs in your browser.
 Practice against five computer opponents and get feedback on your decisions.
 
+[Play Poker Classroom](https://pokerclassroom.com/) — free and open source.
+
 ![Poker Classroom poker table with six players, coaching, and an opening range chart](docs/screenshot.png)
 
 ## Run
@@ -43,6 +45,51 @@ as one text file, or reset the session after confirmation. Session histories and
 scores are saved in this browser. Exports include the current hand even if it
 is still in progress. Reset clears the session but preserves sound, coach, and
 stack preferences.
+
+## Session performance
+
+The top bar shows Hands, Decisions and Accuracy. Advanced performance statistics
+live under the **Session** heading inside **Hand history**, alongside Current
+hand. Expanding Hand history shows both sections, including the completed-hand
+sample size, Net profit, Observed win rate, VPIP and PFR, with definitions and
+reference ranges. Export and Reset session are in the same
+Session section. Hover or focus a top-bar stat for its definition; tap to keep
+the explanation open on touch screens. Escape or tapping elsewhere dismisses it.
+The four performance values update automatically after settlement:
+
+- **Net profit (BB):** sum of each completed hand’s (payouts + uncalled returns −
+  contributions) divided by that hand’s own big blind. Split and side-pot payouts
+  are included once. Payouts already reflect any rake; do not subtract it again.
+- **Observed win rate (BB/100):** total normalized profit × 100 / completed hands.
+- **VPIP (%):** completed dealt hands with a voluntary preflop call, limp, or
+  raise / completed dealt hands × 100. Forced blinds and antes are excluded.
+- **PFR (%):** completed dealt hands with a preflop raise or reraise / completed
+  dealt hands × 100. Multiple raises still count as one qualifying hand.
+
+The descriptions include broad six-max cash-game reference ranges: **VPIP
+20–30%** and **PFR 15–25%**, based on [Upswing Poker’s HUD guide](https://upswingpoker.com/poker-hud-stats/).
+These are approximate context, not grades or universal targets. Position, rake
+and opponents affect appropriate frequencies; small samples can differ sharply.
+
+All performance statistics use completed dealt hands, including walks. A walk
+without a voluntary investment or raise contributes to neither VPIP nor PFR. In-progress hands are
+excluded, even after the player folds. Empty cards show “—”; measured zero shows
+0. Results describe simulated, zero-rake practice, not coaching accuracy or a
+reliable estimate of skill. The Session section shows the completed sample size
+and warns about variance.
+
+`performance.js` reads the existing saved Classroom text histories in the game
+worker, including older saves with the PokerStars header prefix. It normalizes
+each hand before summing, so mixed stakes are handled correctly if present in
+saved histories (the current trainer uses synthetic $0.50/$1.00 stakes). It does
+not use the current stack balance: stacks reset each hand and are not profit.
+Archived histories are cached during play. The current hand is included only
+after settlement, then counted once when archived. Repeated history identities
+are counted once. Unreadable histories are excluded with a visible warning.
+
+No save migration or separate statistics store is needed. Reload restores the
+same saved histories and rebuilds performance; Reset session clears both.
+This dashboard uses the existing session only, with no external tracker imports.
 
 ## Simulate and export hands
 
@@ -106,7 +153,7 @@ in this browser.
 npm run eval:coach
 ```
 
-This evaluates 34 public decision cases and writes
+This evaluates 39 public decision cases and writes
 `evals/coach/review-case-results.json`. Cases cover river sizing, showdown value,
 strong-made-hand ranges and preflop uncertainty. They are review judgments,
 not solver answers.
