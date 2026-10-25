@@ -213,14 +213,13 @@ test('two-pair river accepts calling and rejects the fragile many-pot shove plan
   assert.ok(shoves.length,'All-in remains a legal candidate');
   assert.ok(shoves.every(x=>x.worst_case_advantage_bb<0));
 });
-test('facing a preflop three-bet uses more samples and permits reasonable alternatives',()=>{
+test('short-stack three-bet defense is provisional rather than a sampled strategy label',()=>{
   for(const seed of [1,20884,5000]){
     const report=advice(decisionHand('preflop-suited-gap-defense'),0,160,new Random(seed));
-    assert.ok(report.samples>=2048);
-    assert.equal(report.requested_samples,160);
-    assert.deepEqual(report.accepted,['call','fold']);
-    assert.equal(report.confidence,'close');
-    assert.equal(report.range_sensitivity.length,2);
+    assert.equal(report.samples,0);assert.equal(report.equity,null);
+    assert.equal(report.graded,false);assert.equal(report.confidence,'unsupported');
+    assert.equal(report.context.node,'facing-three-bet');
+    assert.equal(decision_review(report,'call').label,'Not graded');
   }
 });
 test('reviewed decisions use no opponents private cards or future deck',()=>{
@@ -265,10 +264,10 @@ test('moderate two-pair value remains plausible but calling is accepted under re
   assert.equal(report.range_sensitivity.find(x=>x.model==='value-heavy').action,'raise');
   assert.ok(report.action_values.some(x=>x.target===15&&x.ev_bb>report.action_values.find(v=>v.action==='call').ev_bb));
 });
-test('a marginal A9o preflop defense remains call-or-fold',()=>{
+test('A9o facing a three-bet folds instead of relying on raw showdown equity',()=>{
   const report=advice(decisionHand('preflop-weak-ace-defense'),0,160,new Random(10991));
-  assert.deepEqual(report.accepted,['call','fold']);
-  assert.equal(report.confidence,'close');assert.ok(report.samples>=2048);
+  assert.deepEqual(report.accepted,['fold']);
+  assert.equal(report.confidence,'clear');assert.equal(report.samples,0);assert.equal(report.graded,true);
   const h=decisionHand('preflop-weak-ace-defense'),opponent=h.live.find(i=>i!==0);
   assert.deepEqual(opponent_range(h,0,opponent,'value-heavy').items,opponent_range(h,0,opponent,'balanced').items);
 });
@@ -380,4 +379,86 @@ test('bot response stress agrees with the independent sampled response diagnosti
   // The independent 2,000-holding experiment ran opponent_advice with 53
   // samples, then applied the 12% passive substitution: 63.1% reraises.
   assert.ok(Math.abs(reraiseProbability - 0.631) < 0.04, reraiseProbability);
+});
+
+test('reported hand 13 accepts a flop value bet with kings and still accepts checking',()=>{
+  const item=fixture.cases.find(c=>c.id==='reported-13-kk-checked-to-multiway-flop');
+  for(const seed of [13,71,2026]){
+    const h=observationHand(item.observation),r=advice(h,h.actor,160,new Random(seed));
+    assert.deepEqual(r.accepted,['check','raise']);assert.equal(r.action,'raise');
+    assert.ok(r.target>=3.5&&r.target<=4.5);
+    assert.equal(decision_review(r,'raise').level,'close');assert.equal(decision_review(r,'check').level,'close');
+  }
+});
+
+for(const item of fixture.cases.filter(c=>c.expectation))test(`calibrated flop specification: ${item.id}`,()=>{
+  const {checkExpectation}=require('../scripts/evaluate-coach.cjs');
+  for(const seed of [13,71,2026]){
+    const h=observationHand(item.observation),r=advice(h,h.actor,320,new Random(seed));
+    assert.deepEqual(checkExpectation(item.expectation,r),[],`${item.id}, seed ${seed}`);
+  }
+});
+
+test('flop calibration weights one-caller branches instead of requiring both opponents to call',()=>{
+  const {flop_value_evidence}=require('../engine.js');
+  const h=observationHand(fixture.cases.find(c=>c.id==='reported-13-kk-checked-to-multiway-flop').observation);
+  // KK loses if AA calls, but wins when AA folds and only QQ calls.
+  const draw={scenarios:[{weight:1,board:['8c','3d','2h','9s','Tc'],holes:{2:['Ah','As'],5:['Qh','Qs']}}]};
+  const result=flop_value_evidence(h,0,draw,8);
+  assert.ok(result.models.every(m=>m.equity>0&&m.equity<1));
+  assert.ok(result.models.every(m=>m.all_fold_probability>0&&m.all_fold_probability<1));
+});
+
+test('flop response decisions use the current board, not the sampled future runout',()=>{
+  const {flop_value_evidence}=require('../engine.js');
+  const h=observationHand(fixture.cases.find(c=>c.id==='reported-13-kk-checked-to-multiway-flop').observation);
+  const scenario={weight:1,holes:{2:['Qh','Qs'],5:['Jh','Js']}};
+  const a=flop_value_evidence(h,0,{scenarios:[{...scenario,board:['8c','3d','2h','9s','Tc']}]},8);
+  const b=flop_value_evidence(h,0,{scenarios:[{...scenario,board:['8c','3d','2h','Qd','9s']}]},8);
+  assert.deepEqual(a.models.map(m=>m.all_fold_probability),b.models.map(m=>m.all_fold_probability));
+  assert.ok(a.models[0].equity>b.models[0].equity);
+});
+
+test('overpair evidence fails against sets and stresses a greater concentration of strong hands',()=>{
+  const {flop_value_evidence}=require('../engine.js');
+  const h=observationHand(fixture.cases.find(c=>c.id==='reported-13-kk-checked-to-multiway-flop').observation);
+  const win={weight:0.5,board:['8c','3d','2h','9s','Tc'],holes:{2:['Qh','Qs'],5:['Jh','Js']}};
+  const lose={weight:0.5,board:win.board,holes:{2:['8h','8d'],5:['3c','3s']}};
+  const losses=flop_value_evidence(h,0,{scenarios:[{...lose,weight:1}]},8);
+  assert.ok(losses.models.every(m=>m.equity===0));
+  const stress=flop_value_evidence(h,0,{scenarios:[win,lose]},8);
+  assert.ok(stress.models.find(m=>m.model==='strong-hands').equity<stress.models.find(m=>m.model==='balanced').equity);
+});
+
+test('reported overpair calibration remains isolated from hidden hands and future deck',()=>{
+  const h=observationHand(fixture.cases.find(c=>c.id==='reported-13-kk-checked-to-multiway-flop').observation);
+  const before=advice(h,0,160,new Random(13));
+  h.holes=h.holes.map((cards,i)=>i===0?cards:['invalid']);h.deck=['invalid'];
+  assert.deepEqual(advice(h,0,160,new Random(13)),before);
+  assert.ok(before.samples>=640);
+  assert.ok(before.value_bet_evidence.candidates.some(c=>c.target_bb===6.5&&c.worst_lower_share>before.value_bet_evidence.threshold));
+});
+
+function reportedKingsFlop(){
+  const h=new Hand(new Random(13),0),hole=['Kc','Kd'],board=['8c','3d','2h'];
+  const rest=DECK.filter(c=>!hole.concat(board).includes(c));h.holes=h.players.map((_,i)=>i===0?hole:[rest.pop(),rest.pop()]);
+  const burn=rest.pop();h.deck=[...rest,...[burn,...board].reverse()];
+  for(const [a,t]of[['fold'],['fold'],['raise',5],['raise',8],['fold'],['call'],['call'],['check'],['check']])h.action(a,t??null);
+  return h;
+}
+test('saved hand 13 refreshes older checking-only advice and accepts the actual 6.50 BB bet',()=>{
+  const t=new Trainer(13,160);t.hand=reportedKingsFlop();t.hand_number=1;t.hand_timestamp='2026/10/25 03:29:53 UTC';
+  t.pending={...advice(t.hand,0,160,t.coach_rng),model:'ranges-v4',action:'check',accepted:['check']};
+  const restored=Trainer.restore(JSON.parse(JSON.stringify(t.snapshot())));
+  assert.deepEqual(restored.pending.accepted,['check','raise']);
+  restored.act('raise',6.5);
+  assert.equal(restored.feedback[0].correct,true);assert.equal(restored.feedback[0].review.level,'close');
+});
+
+test('flop calibration does not apply when facing a bet and a call',()=>{
+  const h=reportedKingsFlop();h.history=h.history.filter(e=>e.street===0);
+  h.pending=new Set(h.live);h.actor=2;h.acted_at=Array(6).fill(null);
+  h.action('raise',8);h.action('call');
+  const r=advice(h,0,320,new Random(13));
+  assert.equal(r.value_bet_evidence,undefined);assert.ok(r.accepted.includes('call'));
 });

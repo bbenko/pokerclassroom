@@ -144,22 +144,33 @@ river fold, call/check and raise values. It checks tighter and looser range
 assumptions, tests a caller who folds less often and ranges with more strong
 made hands on the river, and marks close decisions as “Both reasonable.”
 Opponents use a separate equity-based strategy.
-Raise sizes must improve on passive play across the tested models before the
-coach recommends them. Preflop decisions facing reraises use more samples and
-range sensitivity checks. Sessions save the current hand, scores and history
-in this browser.
+On the river, recommended raise sizes must improve on passive play across the
+tested models. Preflop decisions use an explicit positional policy with calls,
+three-bets, squeezes and four-bets. It accepts reasonable alternatives without
+inventing mixing percentages. Advice outside the supported stack depths and
+raise sizes is marked Not graded and excluded from accuracy.
+
+A bounded flop calibration accepts small value bets and checks with overpairs
+when the preflop aggressor is last to act on a qualifying rainbow board. It
+models one or more callers instead of requiring every opponent to continue.
+Its showdown-share estimates are teaching heuristics, not full betting EVs.
+Feedback explains the hand, price, sizing and accepted alternatives. Sessions
+save the current hand, scores and history in this browser.
 
 ```sh
 npm run eval:coach
 ```
 
-This evaluates 39 public decision cases and writes
-`evals/coach/review-case-results.json`. Cases cover river sizing, showdown value,
-strong-made-hand ranges and preflop uncertainty. They are review judgments,
-not solver answers.
+This evaluates 52 public decision cases and the preflop behavior specifications
+under three seeds. Reports are written to `evals/coach/review-case-results.json`
+and `evals/coach/preflop-results.json`; preflop or postflop expectation failures
+return a nonzero exit status. Use `npm run eval:preflop` for the preflop suite alone.
+These are teaching-policy checks and review judgments, not solver answers.
 
 See [coach policy and limitations](docs/coach-policy.md) for range assumptions,
-river response modeling, and validation details.
+river response modeling, and validation details. See the
+[latest validation record](docs/coaching-evaluation.md) for the tested version
+and results.
 
 ## Evaluation workflow for future changes
 

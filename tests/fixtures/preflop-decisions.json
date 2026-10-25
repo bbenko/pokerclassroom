@@ -1,0 +1,1797 @@
+{
+  "note": "Original review specifications for a simplified six-max no-rake 75\u2013150 BB teaching baseline. Behavioral checks, not solver-certified EV judgments. Holdout cases were specified before the first evaluation; they are public regression cases after use. No exact mixed frequencies are asserted.",
+  "cases": [
+    {
+      "id": "hj-kto",
+      "hero": "HJ",
+      "cards": "Kc Td",
+      "actions": [],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "raise"
+      ],
+      "forbidden": [
+        "call"
+      ],
+      "target": [
+        2.5,
+        2.5
+      ]
+    },
+    {
+      "id": "co-kjo",
+      "hero": "CO",
+      "cards": "Kh Js",
+      "actions": [],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "raise"
+      ],
+      "forbidden": [
+        "call"
+      ],
+      "target": [
+        2.5,
+        2.5
+      ]
+    },
+    {
+      "id": "co-a4o",
+      "hero": "CO",
+      "cards": "Ah 4s",
+      "actions": [],
+      "action": "fold",
+      "graded": true,
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call"
+      ]
+    },
+    {
+      "id": "hj-a5o",
+      "hero": "HJ",
+      "cards": "As 5h",
+      "actions": [],
+      "action": "fold",
+      "graded": true,
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call"
+      ]
+    },
+    {
+      "id": "utg-22",
+      "hero": "UTG",
+      "cards": "2s 2h",
+      "actions": [],
+      "action": "fold",
+      "graded": true,
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call"
+      ]
+    },
+    {
+      "id": "bb-tt-vs-utg",
+      "hero": "BB",
+      "cards": "Th Td",
+      "actions": [
+        [
+          "UTG",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "call",
+      "graded": true,
+      "required": [
+        "call",
+        "raise"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "facing-open"
+    },
+    {
+      "id": "bb-tt-vs-hj",
+      "hero": "BB",
+      "cards": "Th Td",
+      "actions": [
+        [
+          "HJ",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "call",
+      "graded": true,
+      "required": [
+        "call",
+        "raise"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "facing-open"
+    },
+    {
+      "id": "bb-tt-vs-co",
+      "hero": "BB",
+      "cards": "Th Td",
+      "actions": [
+        [
+          "CO",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "call",
+        "raise"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "facing-open",
+      "target": [
+        9,
+        11
+      ]
+    },
+    {
+      "id": "bb-tt-vs-btn",
+      "hero": "BB",
+      "cards": "Th Td",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "call",
+        "raise"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "facing-open",
+      "target": [
+        9,
+        11
+      ]
+    },
+    {
+      "id": "bb-tt-vs-sb",
+      "hero": "BB",
+      "cards": "Th Td",
+      "actions": [
+        [
+          "SB",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "call",
+        "raise"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "facing-open",
+      "target": [
+        8,
+        8.5
+      ]
+    },
+    {
+      "id": "bb-aks-cold-fourbet-utg",
+      "hero": "BB",
+      "cards": "As Ks",
+      "actions": [
+        [
+          "UTG",
+          "raise",
+          2.5
+        ],
+        [
+          "HJ",
+          "raise",
+          7.5
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "raise"
+      ],
+      "forbidden": [
+        "fold",
+        "call"
+      ],
+      "node": "cold-four-bet",
+      "target": [
+        20,
+        23
+      ]
+    },
+    {
+      "id": "bb-aks-cold-fourbet-co",
+      "hero": "BB",
+      "cards": "As Ks",
+      "actions": [
+        [
+          "CO",
+          "raise",
+          2.5
+        ],
+        [
+          "BTN",
+          "raise",
+          7.5
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "raise"
+      ],
+      "forbidden": [
+        "fold",
+        "call"
+      ],
+      "node": "cold-four-bet",
+      "target": [
+        20,
+        23
+      ]
+    },
+    {
+      "id": "bb-aks-cold-fourbet-btn",
+      "hero": "BB",
+      "cards": "As Ks",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ],
+        [
+          "SB",
+          "raise",
+          7.5
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "raise"
+      ],
+      "forbidden": [
+        "fold",
+        "call"
+      ],
+      "node": "cold-four-bet",
+      "target": [
+        20,
+        23
+      ]
+    },
+    {
+      "id": "btn-ats-vs-co",
+      "hero": "BTN",
+      "cards": "As Ts",
+      "actions": [
+        [
+          "CO",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "call",
+        "raise"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "facing-open",
+      "target": [
+        8,
+        9
+      ]
+    },
+    {
+      "id": "sb-k9s-vs-btn",
+      "hero": "SB",
+      "cards": "Kc 9c",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "raise",
+        "fold",
+        "call"
+      ],
+      "node": "facing-open",
+      "target": [
+        10,
+        10
+      ]
+    },
+    {
+      "id": "sb-a9o-vs-hj",
+      "hero": "SB",
+      "cards": "Ad 9h",
+      "actions": [
+        [
+          "HJ",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "fold",
+      "graded": true,
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call",
+        "raise"
+      ],
+      "node": "facing-open"
+    },
+    {
+      "id": "co-66-vs-utg",
+      "hero": "CO",
+      "cards": "6h 6c",
+      "actions": [
+        [
+          "UTG",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "call",
+      "graded": true,
+      "required": [
+        "call"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "node": "facing-open"
+    },
+    {
+      "id": "co-77-vs-hj",
+      "hero": "CO",
+      "cards": "7c 7d",
+      "actions": [
+        [
+          "HJ",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "call",
+      "graded": true,
+      "required": [
+        "call"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "node": "facing-open"
+    },
+    {
+      "id": "btn-22-vs-co",
+      "hero": "BTN",
+      "cards": "2h 2c",
+      "actions": [
+        [
+          "CO",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "fold",
+      "graded": true,
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "node": "facing-open"
+    },
+    {
+      "id": "hj-55-vs-utg",
+      "hero": "HJ",
+      "cards": "5c 5h",
+      "actions": [
+        [
+          "UTG",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "fold",
+      "graded": true,
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "node": "facing-open"
+    },
+    {
+      "id": "bb-72o-vs-btn",
+      "hero": "BB",
+      "cards": "7c 2d",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "fold",
+      "graded": true,
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call",
+        "raise"
+      ],
+      "node": "facing-open"
+    },
+    {
+      "id": "btn-a5s-bluff",
+      "hero": "BTN",
+      "cards": "Ac 5c",
+      "actions": [
+        [
+          "CO",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "fold",
+        "raise"
+      ],
+      "forbidden": [
+        "call"
+      ],
+      "node": "facing-open"
+    },
+    {
+      "id": "btn-a5o-control",
+      "hero": "BTN",
+      "cards": "Ac 5d",
+      "actions": [
+        [
+          "CO",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "fold",
+      "graded": true,
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "raise",
+        "call"
+      ],
+      "node": "facing-open"
+    },
+    {
+      "id": "bb-a5o-discount",
+      "hero": "BB",
+      "cards": "Ac 5d",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "call",
+      "graded": true,
+      "required": [
+        "call"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "facing-open"
+    },
+    {
+      "id": "sb-a5o-control",
+      "hero": "SB",
+      "cards": "Ac 5d",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "fold",
+      "graded": true,
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call",
+        "raise"
+      ],
+      "node": "facing-open"
+    },
+    {
+      "id": "bb-aks-squeeze",
+      "hero": "BB",
+      "cards": "As Ks",
+      "actions": [
+        [
+          "CO",
+          "raise",
+          2.5
+        ],
+        [
+          "BTN",
+          "call"
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "raise"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "squeeze",
+      "target": [
+        12.5,
+        12.5
+      ]
+    },
+    {
+      "id": "bb-junk-no-squeeze",
+      "hero": "BB",
+      "cards": "9c 4d",
+      "actions": [
+        [
+          "CO",
+          "raise",
+          2.5
+        ],
+        [
+          "BTN",
+          "call"
+        ]
+      ],
+      "action": "fold",
+      "graded": true,
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "raise",
+        "call"
+      ],
+      "node": "squeeze"
+    },
+    {
+      "id": "btn-aks-defend-threebet",
+      "hero": "BTN",
+      "cards": "As Ks",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ],
+        [
+          "SB",
+          "raise",
+          10
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "raise"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "facing-three-bet",
+      "target": [
+        23,
+        25
+      ]
+    },
+    {
+      "id": "utg-tt-defend-threebet",
+      "hero": "UTG",
+      "cards": "Tc Td",
+      "actions": [
+        [
+          "UTG",
+          "raise",
+          2.5
+        ],
+        [
+          "BTN",
+          "raise",
+          8
+        ]
+      ],
+      "action": "call",
+      "graded": true,
+      "required": [
+        "call"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "facing-three-bet"
+    },
+    {
+      "id": "btn-a9o-defend-threebet",
+      "hero": "BTN",
+      "cards": "As 9h",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ],
+        [
+          "SB",
+          "raise",
+          7.5
+        ]
+      ],
+      "action": "fold",
+      "graded": true,
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call",
+        "raise"
+      ],
+      "node": "facing-three-bet"
+    },
+    {
+      "id": "utg-a6s-small-threebet",
+      "hero": "UTG",
+      "cards": "As 6s",
+      "actions": [
+        [
+          "UTG",
+          "raise",
+          2.5
+        ],
+        [
+          "BTN",
+          "raise",
+          7.5
+        ]
+      ],
+      "action": "fold",
+      "graded": true,
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "node": "facing-three-bet"
+    },
+    {
+      "id": "sb-a4s-fold-fivebet",
+      "hero": "SB",
+      "cards": "As 4s",
+      "actions": [
+        [
+          "SB",
+          "raise",
+          3
+        ],
+        [
+          "BB",
+          "raise",
+          9
+        ],
+        [
+          "SB",
+          "raise",
+          24
+        ],
+        [
+          "BB",
+          "raise",
+          48
+        ]
+      ],
+      "action": "fold",
+      "graded": true,
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call",
+        "raise"
+      ],
+      "node": "facing-five-bet-plus"
+    },
+    {
+      "id": "sb-aa-continue-fourbet",
+      "hero": "SB",
+      "cards": "As Ac",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ],
+        [
+          "SB",
+          "raise",
+          10
+        ],
+        [
+          "BTN",
+          "raise",
+          24
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "raise"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "facing-four-bet",
+      "target": [
+        100,
+        100
+      ]
+    },
+    {
+      "id": "sb-a5s-release-fourbet",
+      "hero": "SB",
+      "cards": "As 5s",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ],
+        [
+          "SB",
+          "raise",
+          10
+        ],
+        [
+          "BTN",
+          "raise",
+          24
+        ]
+      ],
+      "action": "fold",
+      "graded": true,
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "raise",
+        "call"
+      ],
+      "node": "facing-four-bet"
+    },
+    {
+      "id": "short-stack-unsupported",
+      "hero": "BB",
+      "cards": "Th Td",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "fold",
+      "graded": false,
+      "stacks": {
+        "BB": 25
+      }
+    },
+    {
+      "id": "deep-stack-unsupported",
+      "hero": "BB",
+      "cards": "Th Td",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "fold",
+      "graded": false,
+      "stacks": {
+        "BB": 200,
+        "BTN": 200
+      }
+    },
+    {
+      "id": "limp-reraise-unsupported",
+      "hero": "SB",
+      "cards": "Ks 9c",
+      "actions": [
+        [
+          "BTN",
+          "call"
+        ],
+        [
+          "SB",
+          "raise",
+          3.5
+        ],
+        [
+          "BTN",
+          "raise",
+          10.5
+        ]
+      ],
+      "action": "fold",
+      "graded": false,
+      "stacks": {}
+    },
+    {
+      "id": "oversized-open-unsupported",
+      "hero": "BB",
+      "cards": "Th Td",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          8
+        ]
+      ],
+      "action": "fold",
+      "graded": false,
+      "stacks": {}
+    },
+    {
+      "id": "backraise-unsupported",
+      "hero": "BTN",
+      "cards": "Th Td",
+      "actions": [
+        [
+          "CO",
+          "raise",
+          2.5
+        ],
+        [
+          "BTN",
+          "call"
+        ],
+        [
+          "SB",
+          "raise",
+          10
+        ]
+      ],
+      "action": "fold",
+      "graded": false,
+      "stacks": {}
+    },
+    {
+      "id": "short-caller-squeeze-unsupported",
+      "hero": "BB",
+      "cards": "Th Td",
+      "actions": [
+        [
+          "CO",
+          "raise",
+          2.5
+        ],
+        [
+          "BTN",
+          "call"
+        ]
+      ],
+      "action": "fold",
+      "graded": false,
+      "stacks": {
+        "BTN": 25
+      }
+    },
+    {
+      "id": "holdout-co-aqs",
+      "hero": "CO",
+      "cards": "Ad Qd",
+      "actions": [
+        [
+          "HJ",
+          "raise",
+          3
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "raise",
+        "call"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "facing-open",
+      "target": [
+        9,
+        10
+      ],
+      "split": "holdout"
+    },
+    {
+      "id": "holdout-bb-kk",
+      "hero": "BB",
+      "cards": "Ks Kd",
+      "actions": [
+        [
+          "HJ",
+          "raise",
+          3
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "raise"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "facing-open",
+      "target": [
+        12,
+        12
+      ],
+      "split": "holdout"
+    },
+    {
+      "id": "holdout-bb-33",
+      "hero": "BB",
+      "cards": "3s 3h",
+      "actions": [
+        [
+          "UTG",
+          "raise",
+          3
+        ]
+      ],
+      "action": "call",
+      "graded": true,
+      "required": [
+        "call"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "node": "facing-open",
+      "split": "holdout"
+    },
+    {
+      "id": "holdout-btn-kqs",
+      "hero": "BTN",
+      "cards": "Ks Qs",
+      "actions": [
+        [
+          "CO",
+          "raise",
+          3
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "call",
+        "raise"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "facing-open",
+      "target": [
+        9,
+        10
+      ],
+      "split": "holdout"
+    },
+    {
+      "id": "holdout-bb-ato-early",
+      "hero": "BB",
+      "cards": "Ad Tc",
+      "actions": [
+        [
+          "UTG",
+          "raise",
+          3
+        ]
+      ],
+      "action": "fold",
+      "graded": true,
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "node": "facing-open",
+      "split": "holdout"
+    },
+    {
+      "id": "holdout-bb-ato-late",
+      "hero": "BB",
+      "cards": "Ad Tc",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          3
+        ]
+      ],
+      "action": "call",
+      "graded": true,
+      "required": [
+        "call"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "facing-open",
+      "split": "holdout"
+    },
+    {
+      "id": "holdout-sb-aks-cold",
+      "hero": "SB",
+      "cards": "Ah Kh",
+      "actions": [
+        [
+          "HJ",
+          "raise",
+          3
+        ],
+        [
+          "CO",
+          "raise",
+          9
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "raise"
+      ],
+      "forbidden": [
+        "call",
+        "fold"
+      ],
+      "node": "cold-four-bet",
+      "target": [
+        25,
+        26
+      ],
+      "split": "holdout"
+    },
+    {
+      "id": "holdout-btn-qq-fourbet",
+      "hero": "BTN",
+      "cards": "Qh Qs",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          3
+        ],
+        [
+          "BB",
+          "raise",
+          12
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "call",
+        "raise"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "facing-three-bet",
+      "target": [
+        28,
+        29
+      ],
+      "split": "holdout"
+    },
+    {
+      "id": "holdout-bb-aks-two-callers",
+      "hero": "BB",
+      "cards": "Ah Kh",
+      "actions": [
+        [
+          "HJ",
+          "raise",
+          3
+        ],
+        [
+          "CO",
+          "call"
+        ],
+        [
+          "BTN",
+          "call"
+        ]
+      ],
+      "action": "raise",
+      "graded": true,
+      "required": [
+        "raise"
+      ],
+      "forbidden": [
+        "fold"
+      ],
+      "node": "squeeze",
+      "target": [
+        18,
+        18
+      ],
+      "split": "holdout"
+    },
+    {
+      "id": "holdout-co-junk",
+      "hero": "CO",
+      "cards": "8d 3c",
+      "actions": [
+        [
+          "UTG",
+          "raise",
+          3
+        ]
+      ],
+      "action": "fold",
+      "graded": true,
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call",
+        "raise"
+      ],
+      "node": "facing-open",
+      "split": "holdout"
+    },
+    {
+      "id": "reported-65-bb-q6s-overcall",
+      "hero": "BB",
+      "cards": "Qs 6s",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ],
+        [
+          "SB",
+          "call"
+        ]
+      ],
+      "action": "call",
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "node": "squeeze",
+      "graded": true
+    },
+    {
+      "id": "bb-q6s-overcall-suit-control",
+      "hero": "BB",
+      "cards": "Qc 6c",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ],
+        [
+          "SB",
+          "call"
+        ]
+      ],
+      "action": "call",
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "node": "squeeze",
+      "graded": true
+    },
+    {
+      "id": "bb-k8s-overcall",
+      "hero": "BB",
+      "cards": "Ks 8s",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ],
+        [
+          "SB",
+          "call"
+        ]
+      ],
+      "action": "call",
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "node": "squeeze",
+      "graded": true
+    },
+    {
+      "id": "bb-j8s-overcall",
+      "hero": "BB",
+      "cards": "Js 8s",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ],
+        [
+          "SB",
+          "call"
+        ]
+      ],
+      "action": "call",
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "node": "squeeze",
+      "graded": true
+    },
+    {
+      "id": "bb-q6o-overcall-control",
+      "hero": "BB",
+      "cards": "Qs 6h",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ],
+        [
+          "SB",
+          "call"
+        ]
+      ],
+      "action": "fold",
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call",
+        "raise"
+      ],
+      "node": "squeeze",
+      "graded": true
+    },
+    {
+      "id": "bb-q5s-overcall-boundary",
+      "hero": "BB",
+      "cards": "Qs 5s",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ],
+        [
+          "SB",
+          "call"
+        ]
+      ],
+      "action": "fold",
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call",
+        "raise"
+      ],
+      "node": "squeeze",
+      "graded": true
+    },
+    {
+      "id": "bb-q6s-early-overcall-control",
+      "hero": "BB",
+      "cards": "Qs 6s",
+      "actions": [
+        [
+          "UTG",
+          "raise",
+          2.5
+        ],
+        [
+          "BTN",
+          "call"
+        ]
+      ],
+      "action": "fold",
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call",
+        "raise"
+      ],
+      "node": "squeeze",
+      "graded": true
+    },
+    {
+      "id": "bb-q6s-co-overcall-control",
+      "hero": "BB",
+      "cards": "Qs 6s",
+      "actions": [
+        [
+          "CO",
+          "raise",
+          2.5
+        ],
+        [
+          "BTN",
+          "call"
+        ]
+      ],
+      "action": "fold",
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call",
+        "raise"
+      ],
+      "node": "squeeze",
+      "graded": true
+    },
+    {
+      "id": "bb-q8s-co-overcall",
+      "hero": "BB",
+      "cards": "Qs 8s",
+      "actions": [
+        [
+          "CO",
+          "raise",
+          2.5
+        ],
+        [
+          "BTN",
+          "call"
+        ]
+      ],
+      "action": "call",
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "node": "squeeze",
+      "graded": true
+    },
+    {
+      "id": "bb-q6s-three-bb-overcall",
+      "hero": "BB",
+      "cards": "Qs 6s",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          3
+        ],
+        [
+          "SB",
+          "call"
+        ]
+      ],
+      "action": "call",
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "node": "squeeze",
+      "graded": true
+    },
+    {
+      "id": "bb-q6s-larger-overcall-control",
+      "hero": "BB",
+      "cards": "Qs 6s",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          3.5
+        ],
+        [
+          "SB",
+          "call"
+        ]
+      ],
+      "action": "fold",
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call",
+        "raise"
+      ],
+      "node": "squeeze",
+      "graded": true
+    },
+    {
+      "id": "sb-q6s-no-bb-discount",
+      "hero": "SB",
+      "cards": "Qs 6s",
+      "actions": [
+        [
+          "CO",
+          "raise",
+          2.5
+        ],
+        [
+          "BTN",
+          "call"
+        ]
+      ],
+      "action": "fold",
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call",
+        "raise"
+      ],
+      "node": "squeeze",
+      "graded": true
+    },
+    {
+      "id": "bb-q6s-short-overcall-unsupported",
+      "hero": "BB",
+      "cards": "Qs 6s",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ],
+        [
+          "SB",
+          "call"
+        ]
+      ],
+      "stacks": {
+        "BB": 25
+      },
+      "action": "fold",
+      "graded": false,
+      "node": "squeeze"
+    },
+    {
+      "id": "reported-71-bb-87o-vs-btn",
+      "hero": "BB",
+      "cards": "8c 7h",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "call",
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "graded": true,
+      "node": "facing-open"
+    },
+    {
+      "id": "bb-87o-suit-permutation",
+      "hero": "BB",
+      "cards": "8d 7c",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "call",
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "graded": true,
+      "node": "facing-open"
+    },
+    {
+      "id": "bb-98o-vs-btn",
+      "hero": "BB",
+      "cards": "9s 8h",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "call",
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "graded": true,
+      "node": "facing-open"
+    },
+    {
+      "id": "bb-76o-vs-btn",
+      "hero": "BB",
+      "cards": "7c 6d",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "call",
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "graded": true,
+      "node": "facing-open"
+    },
+    {
+      "id": "bb-65o-vs-btn",
+      "hero": "BB",
+      "cards": "6h 5d",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "call",
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "graded": true,
+      "node": "facing-open"
+    },
+    {
+      "id": "bb-87o-vs-sb-three-bb",
+      "hero": "BB",
+      "cards": "8c 7h",
+      "actions": [
+        [
+          "SB",
+          "raise",
+          3
+        ]
+      ],
+      "action": "call",
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "graded": true,
+      "node": "facing-open"
+    },
+    {
+      "id": "bb-87o-min-open",
+      "hero": "BB",
+      "cards": "8c 7h",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2
+        ]
+      ],
+      "action": "call",
+      "required": [
+        "call",
+        "fold"
+      ],
+      "forbidden": [
+        "raise"
+      ],
+      "graded": true,
+      "node": "facing-open"
+    },
+    {
+      "id": "bb-87o-larger-open-control",
+      "hero": "BB",
+      "cards": "8c 7h",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          3.5
+        ]
+      ],
+      "action": "fold",
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call",
+        "raise"
+      ],
+      "graded": true,
+      "node": "facing-open"
+    },
+    {
+      "id": "bb-87o-utg-control",
+      "hero": "BB",
+      "cards": "8c 7h",
+      "actions": [
+        [
+          "UTG",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "fold",
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call",
+        "raise"
+      ],
+      "graded": true,
+      "node": "facing-open"
+    },
+    {
+      "id": "bb-54o-control",
+      "hero": "BB",
+      "cards": "5c 4h",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "fold",
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call",
+        "raise"
+      ],
+      "graded": true,
+      "node": "facing-open"
+    },
+    {
+      "id": "sb-87o-no-bb-discount",
+      "hero": "SB",
+      "cards": "8c 7h",
+      "actions": [
+        [
+          "BTN",
+          "raise",
+          2.5
+        ]
+      ],
+      "action": "fold",
+      "required": [
+        "fold"
+      ],
+      "forbidden": [
+        "call",
+        "raise"
+      ],
+      "graded": true,
+      "node": "facing-open"
+    }
+  ]
+}

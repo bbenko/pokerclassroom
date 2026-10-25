@@ -11,11 +11,15 @@ function simulate({count = 1000, seed = 9182, samples = 160, out = 'evals/latest
   // Never silently replace a previous evaluation.
   fs.mkdirSync(out, {recursive: false});
   const trainer = new Trainer(seed, samples);
-  const summary = {count, seed, samples, hero_policy: 'coach recommendation', opponent_policy: 'equity-based simulated opponents', stakes: 'synthetic $0.50/$1.00; no rake', stacks: 'alternating equal/mixed, reset each hand', showdowns: 0, side_pot_hands: 0, split_pot_hands: 0, actions: 0, hero_profit_bb: 0, checks: {completed: 0, chip_and_deck_conservation: 0, payouts_balanced: 0}};
+  const summary = {count, seed, samples, hero_policy: 'coach recommendation', opponent_policy: 'equity-based simulated opponents', stakes: 'synthetic $0.50/$1.00; no rake', stacks: 'alternating equal/mixed, reset each hand', coach_decisions:0, graded_preflop:0, provisional_preflop:0, showdowns: 0, side_pot_hands: 0, split_pot_hands: 0, actions: 0, hero_profit_bb: 0, checks: {completed: 0, chip_and_deck_conservation: 0, payouts_balanced: 0}};
   for (let number = 1; number <= count; number++) {
     trainer.new_hand(number % 2 ? 'equal' : 'mixed');
     let decisions = 0;
-    while (!trainer.hand.done && decisions++ < 500) trainer.act(trainer.pending.action, trainer.pending.target);
+    while (!trainer.hand.done && decisions++ < 500) {
+      summary.coach_decisions++;
+      if (trainer.hand.street === 0) summary[trainer.pending.graded === false ? 'provisional_preflop' : 'graded_preflop']++;
+      trainer.act(trainer.pending.action, trainer.pending.target);
+    }
     const h = trainer.hand;
     assert.ok(h.done, `Hand ${number} did not finish`);
     h.assert_invariants();

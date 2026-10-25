@@ -421,7 +421,7 @@ function opponent_advice(hand, who, samples, rng) {
     range: hand.street === 0 && hand.current_bet <= 2 && legal.raise && hand.n === 6 ? {...opening_range(position, preflop_limpers(hand, who) > 0), current_hand: hand_class(hand.holes[who])} : null};
 }
 // Likelihoods are explicit training assumptions, not solved ranges.
-const COACH_VERSION = 'ranges-v1';
+const COACH_VERSION = 'ranges-v5';
 const sigmoid = (value, slope = 24) => 1 / (1 + Math.exp(-value * slope));
 const COMBOS = DECK.flatMap((a, i) => DECK.slice(i + 1).map(b => [a, b]));
 const metric_cache = new Map();
@@ -571,6 +571,56 @@ function range_equity(hand, who, samples, rng, model = 'balanced', continuing = 
   const draw = range_scenarios(hand, who, samples, rng, model, continuing);
   return {...scenario_equity(hand, who, draw.scenarios), ...draw};
 }
+// A bounded calibration for checked-to overpairs, not a postflop solver.
+// Caller decisions depend only on the current board; sampled future boards
+// measure showdown share after one or more calls, never actual future cards.
+function flop_value_spot(hand, who, bet) {
+  const hole = hand.holes[who], ranks = hand.board.map(c=>RANKS.indexOf(c[0])+2);
+  const live = hand.live.filter(i=>i!==who), preflop = hand.history.filter(e=>e.street===0&&e.kind==='raise');
+  if (hand.street !== 1 || !hand.legal().check || !hand.legal().raise || hand.pending.size !== 1
+    || hand.actor !== who || live.length < 1 || live.length > 2 || preflop.at(-1)?.actor !== who
+    || hole[0][0] !== hole[1][0] || RANKS.indexOf(hole[0][0])+2 <= Math.max(...ranks)
+    || new Set(ranks).size !== 3 || new Set(hand.board.map(c=>c[1])).size !== 3 || Math.max(...ranks)-Math.min(...ranks) <= 4
+    || hand.history.filter(e=>e.street===1).some(e=>e.kind!=='check')
+    || live.some(i=>!hand.history.some(e=>e.street===1&&e.actor===i&&e.kind==='check'))
+    || hand.players.some((p,i)=>hand.live.includes(i)&&p.stack<bet)
+    || hand.live.some(i=>Math.min(hand.players[who].stack+hand.players[who].contributed,hand.players[i].stack+hand.players[i].contributed)<150||Math.min(hand.players[who].stack+hand.players[who].contributed,hand.players[i].stack+hand.players[i].contributed)>300)) return false;
+  return true;
+}
+function flop_value_evidence(hand, who, draw, bet) {
+  if (!flop_value_spot(hand, who, bet)) return null;
+  const hole=hand.holes[who],live=hand.live.filter(i=>i!==who);
+  const prepared = draw.scenarios.map(s=>({weight:s.weight,
+    own:rank_code(hole.concat(s.board)),
+    opponents:live.map(i=>({seat:i,pair:s.holes[i],score:rank_code(s.holes[i].concat(s.board)),strong:rankCards(s.holes[i].concat(hand.board))[0]>=3}))}));
+  const models = ['balanced','tight','loose','strong-hands'].map(model=>{
+    let numerator=0,denominator=0,folds=0,total=0;const moments=[];
+    for(const s of prepared){
+      const weight=s.weight*(model==='strong-hands'&&s.opponents.some(o=>o.strong)?3:1);
+      const probabilities=s.opponents.map(o=>Math.max(0.01,Math.min(0.99,action_likelihood(o.pair,
+        {street:1,board:hand.board,kind:'call',raises:1,to_call:bet,amount:bet,pot:hand.pot+bet,position:hand.position(o.seat)},
+        hole,model==='strong-hands'?'balanced':model))));
+      let n=0,d=0;
+      for(let mask=1;mask<(1<<live.length);mask++){
+        let probability=1,beaten=false,ties=0;
+        s.opponents.forEach((o,j)=>{
+          const calls=!!(mask&(1<<j));probability*=calls?probabilities[j]:1-probabilities[j];
+          if(calls){if(o.score>s.own)beaten=true;else if(o.score===s.own)ties++;}
+        });
+        n+=probability*(beaten?0:1/(1+ties));d+=probability;
+      }
+      numerator+=weight*n;denominator+=weight*d;folds+=weight*(1-d);total+=weight;moments.push({weight,n,d});
+    }
+    const equity=numerator/denominator;
+    // Ratio-estimator sampling error; response/range model error is separate.
+    const standard_error=Math.sqrt(moments.reduce((sum,m)=>sum+(m.weight*(m.n-equity*m.d))**2,0))/denominator;
+    return {model,equity,standard_error,all_fold_probability:folds/total};
+  });
+  return {target_bb:bb(bet),samples:draw.scenarios.length,models,
+    worst_lower_share:Math.min(...models.map(m=>m.equity-2*m.standard_error)),
+    basis:'Sampled showdown share conditional on at least one call. One- and two-caller branches; no future betting or check-raises. Not EV.'};
+}
+
 const RIVER_STRESS_MODELS = ['tight', 'loose', 'sticky', 'value-heavy', 'cautious', 'bot-policy'];
 const BOT_RIVER_SAMPLES = 53, BOT_PASSIVE_RATE = 0.12;
 const BOT_RIVER_TOTAL = 2 * BOT_RIVER_SAMPLES;
@@ -730,27 +780,282 @@ function river_values(hand, who, draw, model = 'balanced') {
     return {...choice, ev_bb: ev, standard_error_bb: draw.exact ? 0 : Math.sqrt(Math.max(0, second - ev * ev) / draw.scenarios.length)};
   });
 }
+// Original, deterministic teaching ranges, informed by the sources in coach-policy.md.
+// These are deliberately not advertised as solver charts or frequency estimates.
+const PREFLOP_POLICY = 'positional-preflop-v1';
+const PREFLOP_RESPONSES = {
+  'early-ip': {value:'JJ+ AKs AKo', raiseCall:'TT AQs', raiseFold:'A5s A4s', call:'66+ AJs ATs KQs QJs JTs T9s', marginal:'55 44 98s'},
+  'early-sb': {value:'JJ+ AKs AKo', raiseCall:'TT AQs', raiseFold:'A5s A4s', call:'77+ AJs KQs', marginal:'66 ATs QJs JTs'},
+  'early-bb': {value:'QQ+ AKs AKo', raiseCall:'JJ TT AQs', raiseFold:'', call:'22+ A2s+ AJo AQo K9s+ KQo Q9s+ J9s+ T8s+ 98s 87s 76s 65s 54s', marginal:'ATo KJo QJo 97s 86s 75s 64s'},
+  'co-btn': {value:'JJ+ AKs AKo', raiseCall:'TT 99 AQs AJs ATs KQs', raiseFold:'A5s A4s', call:'44+ A9s A8s KJs KTs QTs+ JTs T9s 98s 87s', marginal:'22 33 A7s A6s AQo KQo 76s'},
+  'co-sb': {value:'TT+ AQs AKs AQo AKo', raiseCall:'99 AJs ATs KQs', raiseFold:'A5s A4s K9s', call:'66+ A9s KJs QJs JTs', marginal:'55 KTs QTs T9s'},
+  'co-bb': {value:'JJ+ AQs AKs AKo', raiseCall:'TT 99 AJs ATs KQs AQo', raiseFold:'A5s A4s', call:'22+ A2s+ ATo AJo K5s+ KTo KJo KQo Q7s+ QTo QJo J8s+ JTo T8s+ 97s+ 86s+ 76s 65s 54s', marginal:'A9o K9o Q9o J9o 75s 64s'},
+  'btn-sb': {value:'99+ AJs AQs AKs AQo AKo', raiseCall:'88 ATs A9s KTs+ QJs AJo KQo', raiseFold:'A5s A4s K9s QTs JTs', call:'55+ A6s+ K8s Q9s J9s T9s 98s 87s', marginal:'44 ATo 76s'},
+  'btn-bb': {value:'JJ+ AQs AKs AKo', raiseCall:'TT 99 88 AJs ATs KQs AQo AJo', raiseFold:'A5s A4s K9s QTs JTs', call:'22+ A2s+ A2o+ K2s+ K8o+ Q4s+ Q9o+ J6s+ J9o+ T6s+ T9o 96s+ 85s+ 75s+ 64s+ 54s', marginal:'K7o Q8o J8o T8o 95s 84s 74s 53s'},
+  'sb-bb': {value:'JJ+ AJs AQs AKs AQo AKo', raiseCall:'TT 99 88 ATs A9s KTs+ QJs AJo KQo', raiseFold:'A5s A4s QTs JTs T9s', call:'22+ A2s+ A2o+ K2s+ K7o+ Q2s+ Q8o+ J4s+ J8o+ T5s+ T8o+ 95s+ 85s+ 75s+ 64s+ 54s', marginal:'K6o Q7o J7o T7o 98o 94s 84s 74s 53s'}
+};
+// Borderline closing overcalls: one caller, no rake, and at most 22.5%
+// immediate calling price. These authored teaching alternatives are not solved EVs.
+const BB_OVERCALL_RANGES = {
+  early:'A2s+ KTs+ QTs+ JTs T9s 98s 87s 76s 65s 54s',
+  CO:'A2s+ K9s+ Q8s+ J8s+ T8s+ 97s+ 86s+ 76s 65s 54s',
+  BTN:'A2s+ K8s+ Q6s+ J8s+ T8s+ 97s+ 86s+ 75s+ 64s+ 54s'
+};
+function in_preflop_range(hole, notation) {
+  const name = hand_class(hole), high = RANKS.indexOf(name[0]), low = RANKS.indexOf(name[1]);
+  return notation.split(/\s+/).filter(Boolean).some(token => {
+    if (!token.endsWith('+')) return name === token;
+    const base = token.slice(0, -1), a = RANKS.indexOf(base[0]), b = RANKS.indexOf(base[1]);
+    return a === b ? high === low && high >= a : name[2] === base[2] && high === a && low >= b;
+  });
+}
+function preflop_context(hand, who) {
+  const events = hand.history.filter(e => e.street === 0), raises = events.filter(e => e.kind === 'raise');
+  const first = raises[0], last = raises.at(-1), ownRaises = raises.filter(e => e.actor === who);
+  const callers = first ? events.filter(e => e.kind === 'call' && e.actor !== who && e.raises === 1 && !hand.players[e.actor].folded) : [];
+  const limped = (first ? events.slice(0, events.indexOf(first)) : events).some(e => e.kind === 'call');
+  const total = i => bb(hand.players[i].stack + hand.players[i].contributed);
+  const relevant = hand.live.filter(i => i !== who && (hand.players[i].contributed > (i === hand.sb ? 1 : i === hand.bb_seat ? 2 : 0) || i === last?.actor));
+  const effective = relevant.length ? Math.min(total(who), Math.max(...relevant.map(total))) : total(who);
+  const order = [hand.sb, ...Array.from({length:hand.n - 1}, (_, i) => (hand.sb + i + 1) % hand.n)];
+  const inPosition = last ? relevant.every(i => order.indexOf(who) > order.indexOf(i)) : null;
+  const calledRaise = events.some(e => e.actor === who && e.kind === 'call' && e.raises >= 1);
+  const node = !raises.length ? (limped ? 'isolation' : 'unopened') : calledRaise && !ownRaises.length ? 'facing-squeeze-after-call' : raises.length === 1 ? (events.some(e => e.actor === who && e.kind === 'call') ? 'backraise' : callers.length ? 'squeeze' : 'facing-open')
+    : raises.length === 2 ? (ownRaises.length ? 'facing-three-bet' : 'cold-four-bet')
+    : raises.length === 3 ? (ownRaises.length ? 'facing-four-bet' : 'cold-five-bet') : 'facing-five-bet-plus';
+  return {node, raises:raises.length, opener:first?.position ?? null, aggressor:last?.position ?? null,
+    callers:callers.length, effective_stack_bb:effective, in_position:inPosition, limped:!!limped,
+    open_to_bb:first ? bb(first.target ?? first.street_bet + first.amount) : null,
+    // The recorded amount is the chips added, not necessarily the raise-to amount.
+    current_to_bb:bb(hand.current_bet), players_behind:hand.live.filter(i => i !== who && hand.pending.has(i) && hand.players[i].street_bet < hand.current_bet).length};
+}
+function preflop_policy(hand, who) {
+  if (hand.street !== 0) return null;
+  const c = preflop_context(hand, who), hole = hand.holes[who], position = hand.position(who), legal = hand.legal();
+  const has = text => in_preflop_range(hole, text), early = ['UTG','HJ'].includes(c.opener);
+  if (hand.current_bet <= 2) {
+    const isolation = preflop_limpers(hand, who) > 0;
+    const action = legal.raise && opening_hand(hole, position, isolation) ? 'raise' : legal.check ? 'check' : !legal.raise && in_preflop_range(hole, 'QQ+ AKs AKo') ? 'call' : 'fold';
+    const graded = hand.n === 6 && hand.live.every(i => Math.min(bb(hand.players[who].stack + hand.players[who].contributed), bb(hand.players[i].stack + hand.players[i].contributed)) >= 75)
+      && c.effective_stack_bb <= 150;
+    return {action, accepted:[action], target:action === 'raise' ? bb(Math.max(legal.min_to * 2, Math.min(legal.max_to * 2, entry_size(hand, who)))) : null,
+      graded, policy:PREFLOP_POLICY, context:c, confidence:graded ? 'clear' : 'unsupported',
+      range:legal.raise && hand.n === 6 ? {...opening_range(position,isolation),current_hand:hand_class(hole)} : null,
+      reason:action === 'raise' ? `Enter with the trainer's ${position} ${isolation ? 'isolation' : 'opening'} range.` : action === 'call' ? 'Call with this premium hand when stack limits prevent a raise.' : action === 'check' ? 'Take the free big-blind option.' : `This hand is outside the trainer's ${position} entry range.`};
+  }
+  let action = 'fold', accepted = ['fold'], note = '', supported = true, overcall = false, connectorDefense = false;
+  const choose = (preferred, alternatives = [preferred]) => {action = preferred; accepted = alternatives;};
+  // Baseline coverage is deliberately bounded. Unsupported prices/stacks use
+  // provisional advice, never a confident mistake label or an accuracy point.
+  if (!c.raises || hand.n !== 6 || c.limped || ['backraise','facing-squeeze-after-call'].includes(c.node) || c.node === 'cold-five-bet' || c.effective_stack_bb < 75 || c.effective_stack_bb > 150) supported = false;
+  if (c.open_to_bb === null || c.open_to_bb < 2 || c.open_to_bb > 3.5) supported = false;
+  if (hand.live.some(i => i !== who && Math.min(bb(hand.players[who].stack + hand.players[who].contributed), bb(hand.players[i].stack + hand.players[i].contributed)) < 75)) supported = false;
+  if (c.node === 'facing-open' || c.node === 'squeeze') {
+    if (c.current_to_bb < 2 || c.current_to_bb > 3.5) supported = false;
+    const group = early ? 'early' : (c.opener || 'unknown').toLowerCase();
+    const seat = position === 'BB' ? 'bb' : position === 'SB' ? 'sb' : position === 'BTN' && !early ? 'btn' : 'ip';
+    const row = PREFLOP_RESPONSES[`${group}-${seat}`];
+    if (!row) supported = false;
+    else if (c.node === 'squeeze') {
+      if (has(early ? 'QQ+ AKs AKo' : 'JJ+ AQs AKs AKo')) choose('raise');
+      else if (has('TT JJ AQs') || (!early && has('99 ATs AJs KQs'))) choose('call', ['call','raise']);
+      else if (position === 'BB' && c.callers === 1 && hand.pending.size === 1 && hand.pending.has(who)
+        && legal.call / (bb(hand.pot) + legal.call) <= 0.225
+        && has(BB_OVERCALL_RANGES[early ? 'early' : c.opener] || '')) {
+        choose('call', ['call','fold']); overcall = true;
+      }
+      else if (has('22+ AJs ATs KQs QJs JTs T9s 98s') && ['BTN','BB'].includes(position)) choose('call', ['call','fold']);
+      note = 'A raise and callers call for a tighter squeeze range and a larger raise size.';
+    } else {
+      if (has(row.value)) choose('raise');
+      else if (has(row.raiseCall)) choose(position === 'BB' && early ? 'call' : 'raise', ['call','raise']);
+      else if (has(row.raiseFold)) choose('raise', position === 'BB' || (position === 'SB' && !early) ? ['call','fold','raise'] : ['fold','raise']);
+      else if (position === 'BB' && hand.pending.size === 1 && hand.pending.has(who)
+        && ((c.opener === 'BTN' && c.current_to_bb <= 2.5) || (c.opener === 'SB' && c.current_to_bb <= 3))
+        && has('98o 87o 76o 65o')) {
+        choose('call', ['call','fold']); connectorDefense = true;
+      }
+      else if (has(row.call)) choose('call');
+      else if (has(row.marginal)) choose('fold', ['call','fold']);
+      note = position === 'BB' ? 'The big-blind discount supports calls; strong hands and selected suited hands also reraise.'
+        : position === 'SB' ? 'Use a position-specific three-bet range. Some calls remain reasonable in this no-rake game.'
+        : 'Position and the opening range determine calls and three-bets, including selected suited bluffs.';
+    }
+  } else if (c.node === 'cold-four-bet') {
+    if (c.current_to_bb < 6 || c.current_to_bb > 15) supported = false;
+    if (has('KK+ AKs')) choose('raise');
+    else if (has('QQ AKo')) choose(early ? 'fold' : 'raise', ['fold','raise']);
+    note = 'Facing an open and a three-bet, use a tight cold-four-bet range; AK suited belongs in the value range.';
+  } else if (c.node === 'facing-three-bet') {
+    if (c.current_to_bb < 6 || c.current_to_bb > 15) supported = false;
+    if (has('KK+ AKs')) choose('raise');
+    else if (has('QQ AKo')) choose('raise', ['call','raise']);
+    else if (has('TT JJ AQs')) choose('call', !early ? ['call','raise'] : ['call']);
+    else if (has('AJs KQs') || (!early && has('99 ATs AQo'))) choose('call');
+    else if (has('A5s A4s') && !early) choose('raise', ['call','fold','raise']);
+    else if (c.current_to_bb <= 9 && (has('A2s+ 88 99 QJs JTs T9s') || (!early && c.in_position && has('77 66 98s J9s')))) choose('fold', ['call','fold']);
+    note = 'Defending an earlier raise differs from cold-calling. Continue with playable strong hands; keep weak offsuit hands out.';
+  } else {
+    if (c.node === 'facing-five-bet-plus' && c.current_to_bb > 50) supported = false;
+    if (c.node === 'facing-four-bet' && (c.current_to_bb < 16 || c.current_to_bb > 35)) supported = false;
+    if (has('KK+')) choose(legal.raise ? 'raise' : 'call');
+    else if (has('QQ AKs AKo')) choose('call', c.node === 'facing-four-bet' && !early ? ['call','raise'] : ['call','fold']);
+    else if (c.node === 'facing-four-bet' && has('JJ TT AQs') && !early && c.current_to_bb <= 25) choose('call', ['call','fold']);
+    note = 'Further raises concentrate strong hands. Small suited-ace bluffs and dominated offsuit hands should usually give up.';
+  }
+  if (!supported) {
+    overcall = false; connectorDefense = false;
+    // A conservative suggestion only, not an extrapolated chart or EV claim.
+    choose(has('KK+') ? (legal.raise ? 'raise' : 'call') : has('QQ AKs AKo') ? 'call' : legal.check ? 'check' : 'fold');
+    note = 'This stack depth, price or betting sequence is outside the positional baseline. The suggestion is provisional and this decision is not scored.';
+  }
+  if (!legal.raise) {
+    accepted = accepted.filter(a => a !== 'raise');
+    if (action === 'raise') action = accepted.includes('call') || has('QQ+ AKs AKo') ? 'call' : 'fold';
+    if (!accepted.includes(action)) accepted.push(action);
+  }
+  const wanted = c.raises === 1
+    ? (c.in_position ? 3.25 : 4) * hand.current_bet + c.callers * hand.current_bet
+    : c.raises === 2 ? (c.in_position ? 2.4 : 2.8) * hand.current_bet : legal.max_to * 2;
+  const target = action === 'raise' ? bb(Math.max(legal.min_to * 2, Math.min(legal.max_to * 2, Math.round(wanted)))) : null;
+  return {action, accepted:accepted.sort(), target, graded:supported, policy:PREFLOP_POLICY, context:c, ...(overcall ? {overcall:true} : {}), ...(connectorDefense ? {connector_defense:true} : {}),
+    confidence:!supported ? 'unsupported' : accepted.length > 1 ? 'close' : 'clear',
+    reason:`${hand_class(hole)} · ${position} versus ${c.aggressor}. ${note}`};
+}
+
+// Explanations describe the selected policy branch and public decision state.
+// They never run another simulation or change recommended/accepted actions.
+function explain_advice(hand, who, report) {
+  const hole = hand.holes[who], name = hand_class(hole), position = hand.position(who);
+  const pair = hole[0][0] === hole[1][0], suited = hole[0][1] === hole[1][1];
+  const ace = hole.some(card => card[0] === 'A');
+  const premium = in_preflop_range(hole, 'QQ+ AKs AKo');
+  const accepted = report.accepted, alternateActions = accepted.filter(a => a !== report.action);
+  const alternatives = [];
+  let situation, why, sizing = null, coverage = null;
+  const verbs = {raise:hand.current_bet === 0 ? 'Betting' : 'Raising',call:'Calling',fold:'Folding',check:'Checking'};
+  if (hand.street === 0) {
+    const c = report.context, early = ['UTG','HJ'].includes(c.opener);
+    const waiting = hand.live.filter(i => i !== who && hand.pending.has(i)).length;
+    const opening = hand.current_bet <= 2;
+    situation = `${name} in ${position}: ${opening ? c.limped ? 'an unraised pot with limpers' : 'an unopened pot' : c.node === 'cold-four-bet' ? `${c.opener} opened and ${c.aggressor} three-bet to ${c.current_to_bb} BB` : c.node === 'squeeze' ? `${c.opener} opened to ${c.current_to_bb} BB with ${c.callers} caller${c.callers === 1 ? '' : 's'}` : `${c.aggressor || 'an opponent'} raised to ${c.current_to_bb} BB`}.`;
+    if (report.graded === false) {
+      const own = bb(hand.players[who].stack + hand.players[who].contributed);
+      const smallest = Math.min(own,...hand.live.filter(i=>i!==who).map(i=>bb(hand.players[i].stack+hand.players[i].contributed)));
+      const limits = [];
+      if (smallest < 75) limits.push(`A live matchup is ${smallest} BB effective, below the supported 75 BB minimum.`);
+      if (c.effective_stack_bb > 150) limits.push(`The effective stack is ${c.effective_stack_bb} BB, above the supported 150 BB maximum.`);
+      if (c.limped && !opening) limits.push('A limp before the raise puts this sequence outside the response ranges.');
+      if (['backraise','facing-squeeze-after-call'].includes(c.node)) limits.push('You already called before facing more aggression; this sequence has no dedicated range yet.');
+      if (hand.n !== 6) limits.push('The positional ranges cover six seats.');
+      if (!opening && Number.isFinite(c.open_to_bb) && (c.open_to_bb < 2 || c.open_to_bb > 3.5)) limits.push(`The ${c.open_to_bb} BB opening size is outside the supported 2–3.5 BB band.`);
+      if (c.raises === 2 && (c.current_to_bb < 6 || c.current_to_bb > 15)) limits.push(`The ${c.current_to_bb} BB three-bet is outside the supported 6–15 BB band.`);
+      if (c.raises === 3 && (c.current_to_bb < 16 || c.current_to_bb > 35)) limits.push(`The ${c.current_to_bb} BB four-bet is outside the supported 16–35 BB band.`);
+      if (c.raises >= 4 && c.current_to_bb > 50) limits.push(`The ${c.current_to_bb} BB further raise is outside the supported response sizes.`);
+      coverage = `${limits.join(' ') || 'This betting sequence has no matching positional range.'} This decision is not graded.`;
+      why = `Treat ${report.action === 'raise' ? 'raising' : report.action === 'call' ? 'calling' : report.action === 'check' ? 'checking' : 'folding'} as a provisional suggestion; the coach cannot judge the alternatives reliably here.`;
+    } else if (opening) {
+      if (report.action === 'check') why = 'You can see the flop for free. This hand is outside the big-blind isolation range, so there is no need to invest more.';
+      else if (report.action === 'call') why = 'Your hand is strong enough to continue, but your remaining stack prevents a legal raise.';
+      else if (report.action === 'raise') why = `${name} clears the ${position} ${c.limped ? 'isolation' : 'opening'} range. ${c.limped ? 'Raise to charge the limpers rather than inviting a cheap multiway flop.' : `${waiting} player${waiting === 1 ? ' remains' : 's remain'} to act; entering with a raise can win the blinds and builds the pot when called.`}`;
+      else if (pair && OPENING_CHARTS[position]) why = `This pair falls below the ${position} ${c.limped ? 'isolation' : 'opening'} baseline, which starts at ${RANKS[(c.limped ? {UTG:6,HJ:5,CO:3,BTN:2,SB:4,BB:10}[position] : OPENING_CHARTS[position].pair) - 2].repeat(2)}. Folding avoids entering with one of the weakest pairs from this seat.`;
+      else if (ace && !suited) why = `This offsuit ace is outside the ${position} entry range. A higher ace can dominate it when you pair your ace, and it lacks the flush potential of a suited ace.`;
+      else why = `${name} is outside the ${position} entry range. Its high-card strength and draw potential do not justify entering from this seat in the teaching baseline.`;
+    } else if (report.overcall) {
+      const cost = hand.legal().call;
+      const requirement = round1(100 * cost / (bb(hand.pot) + cost));
+      why = `You close the preflop action and call only ${cost} BB into a ${bb(hand.pot)} BB pot, requiring ${requirement}% before future betting. ${ace ? 'The suited ace has nut-flush potential' : 'The suited hand has flush potential'}, which supports considering an overcall in this no-rake game. Multiple opponents reduce how much equity you can realize, so the price alone does not prove a profitable call.`;
+    } else if (report.connector_defense) {
+      const cost = hand.legal().call;
+      const requirement = round1(100 * cost / (bb(hand.pot) + cost));
+      why = `You close the action against one late-position opener. Calling ${cost} BB into ${bb(hand.pot)} BB requires ${requirement}% before future betting. The connected ranks offer straight potential against a wide opening range, but being offsuit limits flush potential. ${c.in_position ? 'You have position after the flop against the small blind.' : 'Playing out of position can make it harder to realize that equity.'} The baseline accepts calling or folding here.`;
+    } else if (c.node === 'cold-four-bet') {
+      why = report.action === 'raise' && premium
+        ? `${name} is in the premium cold-four-bet range. Raising builds value and makes both the original opener and the three-bettor respond; calling leaves the opener another chance to raise.`
+        : premium ? `The ${early ? 'early-position opening range and subsequent three-bet' : 'open and three-bet together'} make this a tight continuation spot. The baseline treats ${name} as a boundary hand here.`
+        : 'An open and a three-bet represent two strong ranges. This hand falls outside the tight cold-four-bet range; a cold call also leaves the original opener able to raise again.';
+    } else if (c.node === 'facing-open' || c.node === 'squeeze') {
+      if (report.action === 'raise' && accepted.includes('fold') && !premium) why = `${name} is a selective three-bet candidate rather than a mandatory value raise. ${ace ? 'Holding an ace removes some combinations of AA and AK from opponents\' possible hands.' : 'Its suited playability gives it ways to improve when called.'} The raise can also win when opponents fold.`;
+      else if (report.action === 'raise') why = `${name} belongs to the ${c.node === 'squeeze' ? 'tighter squeeze' : 'value three-bet'} range against this ${early ? 'early-position' : c.opener} open. Raising builds a pot with a strong hand and can make hands with live outs fold.`;
+      else if (report.action === 'call') why = pair
+        ? `${name} ${in_preflop_range(hole, '88+') ? `already has showdown value against ${c.opener}'s ${early ? 'tighter early-position' : 'opening'} range. Calling keeps the pot smaller rather than committing more against a stronger continuing range.` : 'has enough set potential for a call in this positional baseline, but that depends on the price, stacks and players still to act; it does not make every small pair a call.'}`
+        : `${name} is in the calling range against this ${early ? 'early-position' : c.opener} open. ${suited ? 'Its suited playability supports continuing without requiring a larger pot.' : 'Its high-card strength supports continuing at this price.'}`;
+      else if (ace && !suited) why = `This offsuit ace falls outside the response range against ${c.opener}. Higher aces can dominate it; ${position === 'SB' ? 'you will also act first after the flop from the small blind.' : 'an ace blocker alone does not make continuing worthwhile.'}`;
+      else why = `${name} falls ${accepted.includes('call') ? 'at the edge of' : 'outside'} the response range against this ${early ? 'early-position' : c.opener} open. ${pair ? 'Set potential alone does not settle whether the price and position justify a call.' : 'Its strength and playability do not support a routine continuation in this matchup.'}`;
+      if (c.node === 'squeeze') why += ` The ${c.callers} caller${c.callers === 1 ? ' adds' : 's add'} dead money, but also ${c.callers === 1 ? 'makes' : 'make'} the continuing pot more likely to be multiway.`;
+      else if (position === 'BB' && report.action === 'call') why += ' Your posted big blind reduces the extra amount needed to call.';
+      if (waiting && !['SB','BB'].includes(position)) why += ` ${waiting} player${waiting === 1 ? ' still has' : 's still have'} a decision and could reraise.`;
+    } else if (c.node === 'facing-three-bet') {
+      why = report.action === 'raise' && premium ? `${name} is strong enough for a value four-bet after your earlier open. Raising builds the pot instead of relying only on its showdown equity.`
+        : report.action === 'raise' ? `${name} is a selective four-bet candidate. ${ace ? 'The ace removes some AA and AK combinations, and suited cards retain draw potential when called.' : 'The baseline permits using this hand to apply pressure.'}`
+        : report.action === 'call' ? `You already opened, so this is a defense against a three-bet rather than a fresh cold call. ${name} has enough strength and playability for the baseline to continue without raising again.`
+        : `${name} is ${accepted.includes('call') ? 'a marginal defense' : 'outside the defending range'} against this three-bet. ${ace && !suited ? 'A higher ace can dominate it, and raw equity versus the calling price does not capture future betting.' : 'The stronger opposing range and future betting make a cheap-looking call insufficient on their own.'}`;
+    } else {
+      why = report.action === 'fold' ? 'Repeated preflop raises concentrate stronger hands. This hand falls outside the continuing range; an earlier raise or bluff is not a reason to keep investing.'
+        : `${name} remains in the strong continuing range against further preflop raises. ${report.action === 'call' ? 'Calling avoids another escalation while retaining showdown value.' : 'The baseline continues aggressively with this premium holding.'}`;
+    }
+    if (report.graded !== false) for (const action of alternateActions) {
+      let reason;
+      if (action === 'call') reason = report.action === 'fold'
+        ? `${pair ? 'The pair\'s set potential' : 'The hand\'s playability'} can justify a call at this price, but players still to act and future betting make it a marginal choice.`
+        : `${pair ? 'The pair already has showdown value' : 'The hand retains useful playability'}, so keeping the pot smaller is also accepted.${position === 'BB' ? ' The posted big blind improves the calling price.' : position === 'SB' ? ' Selected small-blind calls are allowed in this no-rake game.' : ''}`;
+      else if (action === 'raise') reason = `Raising can build value or win the pot before the flop; ${name} is also included in the raising alternative for this matchup.`;
+      else if (action === 'fold') reason = report.connector_defense ? 'Folding is also reasonable: a low offsuit connector often misses the flop, and its small pairs can face difficult future bets.' : report.overcall ? 'Folding is also reasonable: this is a borderline multiway defense, and weak pairs or a non-nut flush can lose to stronger hands.' : premium
+        ? 'The combined aggression can represent a very tight range, so the baseline also accepts declining the extra commitment.'
+        : `This is ${report.action === 'raise' ? 'a selective aggression candidate' : 'a marginal continuation'}, so folding is accepted instead of making every opportunity compulsory.`;
+      else reason = 'Taking the free option is also accepted here.';
+      alternatives.push({action, reason});
+    }
+    if (report.action === 'raise' && report.graded !== false) sizing = report.target === hand.legal().max_to
+      ? `The suggested raise reaches your remaining stack: ${report.target} BB total.`
+      : `The suggested total is ${report.target} BB. ${opening ? c.limped ? 'The size includes extra chips for limpers.' : 'This uses the opening size for your seat.' : `${c.in_position ? 'Position allows a smaller raise' : 'Being out of position calls for a larger raise'}${c.callers && c.raises === 1 ? ', with extra chips for the callers' : ''}.`}`;
+  } else {
+    const made = hand_name(hole.concat(hand.board));
+    const board = hand.board.join(' '), price = hand.legal().call;
+    situation = `${name} on ${board}: your best hand is ${made.toLowerCase()}.${price ? ` Calling costs ${price} BB into a ${bb(hand.pot)} BB pot.` : ' You can check for free.'}`;
+    why = report.reason;
+    const cap = hand.players[who].contributed + price * 2;
+    if (price && hand.players.some(p=>p.contributed>cap)) why += ' Only chips you can contest count toward the calling requirement; the total pot includes money you cannot win.';
+    if (hand.street < 3 && ['call','fold'].includes(report.action)) why += ` The estimate is ${report.equity}% versus a ${report.pot_odds}% immediate calling requirement, with an additional cushion for future betting${report.opponents > 1 ? ' and multiple opponents' : ''}.`;
+    const suits = hand.board.map(card=>card[1]);
+    if (Math.max(...SUITS.split('').map(s=>suits.filter(x=>x===s).length)) >= 3) why += ' Three or more board cards share a suit, so flushes are possible.';
+    for (const action of alternateActions) alternatives.push({action,reason:action === 'raise'
+      ? 'Some tested assumptions also support raising; its value depends on which hands call or fold, so the coach also accepts this action.'
+      : action === 'call' ? 'Calling retains showdown value without reopening the betting. It is also accepted within the tested uncertainty.'
+      : action === 'fold' ? 'The value of continuing is sensitive to the estimated range or a small decision margin, so saving the remaining chips is also accepted.'
+      : 'Checking takes the free option and is also accepted within the tested uncertainty.'});
+    if (report.action === 'raise') sizing = `The suggested total is ${report.target} BB.`;
+  }
+  const explanation = {situation,why,alternatives:alternatives.map(a=>({...a,label:`${verbs[a.action]} is also reasonable`})),sizing,coverage};
+  return {...report,reason:`${situation} ${why}`,explanation};
+}
+
 function advice(hand, who, samples, rng) {
   if (hand.actor !== who || hand.done) throw Error('Advice requires an active decision for this player.');
   assert(Number.isInteger(samples) && samples >= 1 && samples <= 5000, 'Use one to 5000 equity samples.');
   const legal = hand.legal(), opponents = hand.live.length - 1, position = hand.position(who), call = legal.call * 2;
+  const preflop = preflop_policy(hand, who);
+  if (preflop) {
+    const cap = hand.players[who].contributed + call;
+    const contestable = sum(hand.players.map(p => Math.min(p.contributed, cap))) + call;
+    return explain_advice(hand, who, {...preflop, display:preflop.action === 'raise' ? `Raise to ${preflop.target} BB` : capitalize(preflop.action),
+      equity:null, pot_odds:round1(contestable ? 100 * call / contestable : 0), samples:0, requested_samples:samples,
+      opponents, position, range:preflop.range || null, model:COACH_VERSION, basis:'Original positional teaching policy for six-max no-rake cash; not solver-derived.',
+      uncertainty_note:!preflop.graded ? 'Outside the supported 75–150 BB baseline; this provisional suggestion does not affect accuracy.' : preflop.accepted.length > 1 ? 'The baseline accepts multiple actions; no exact mixing frequencies are claimed.' : null,
+      range_summary:[], action_values:[], range_sensitivity:[], review_evidence:null});
+  }
   const cap = hand.players[who].contributed + call;
   const contestable = sum(hand.players.map(p => Math.min(p.contributed, cap))) + call;
   const odds = call && contestable ? call / contestable : 0;
-  const preflopRaises = hand.history.filter(event => event.street === 0 && event.kind === 'raise').length;
-  const facingPreflopRaise = hand.street === 0 && hand.current_bet > 2;
-  const minimumSamples = facingPreflopRaise ? (preflopRaises >= 2 ? 2048 : 640) : 160;
-  let used = Math.max(minimumSamples, samples), estimate = range_equity(hand, who, used, rng);
+  const smallFlopBet = Math.max(legal.min_to * 2, Math.min(legal.max_to * 2, Math.round(hand.pot / 3)));
+  const calibrateFlop = flop_value_spot(hand, who, smallFlopBet);
+  let used = Math.max(calibrateFlop ? 640 : 160, samples), estimate = range_equity(hand, who, used, rng);
   const error = estimate.exact ? 0 : Math.sqrt(estimate.variance / used);
   if (!estimate.exact && Math.abs(estimate.equity - odds - 0.04) < 2 * error) {
     used = Math.min(5000, Math.max(used, 640)); estimate = range_equity(hand, who, used, rng);
   }
-  let action, accepted, reason, target = null, values = [], sensitivity = [], confidence = 'clear', review_evidence = null;
-  if (hand.street === 0 && hand.current_bet <= 2) {
-    action = legal.raise && opening_hand(hand.holes[who], position, preflop_limpers(hand, who) > 0) ? 'raise' : legal.check ? 'check' : 'fold';
-    accepted = [action];
-    reason = action === 'raise' ? `Enter with the trainer's ${position} opening or isolation range.` : action === 'check' ? 'Take the free big-blind option.' : `This hand is outside the trainer's ${position} entry range.`;
-  } else if (hand.street === 3) {
+  let action, accepted, reason, target = null, values = [], sensitivity = [], confidence = 'clear', review_evidence = null, value_bet_evidence = null;
+  if (hand.street === 3) {
     values = river_values(hand, who, estimate);
     const sorted = values.slice().sort((a, b) => b.ev_bb - a.ev_bb);
     const best = sorted[0]; action = best.action; target = best.target;
@@ -806,7 +1111,20 @@ function advice(hand, who, samples, rng) {
     action = legal.check ? 'check' : eq >= odds + cushion ? 'call' : 'fold';
     accepted = [action];
     reason = action === 'fold' ? 'The estimated share against action-weighted ranges does not justify the price with a cushion for future betting.' : action === 'call' ? 'The estimate against action-weighted ranges clears the calling price; keep the pot manageable.' : 'Take the free card or showdown with this hand.';
-    if (legal.raise && eq > 0.58) {
+    if (calibrateFlop) {
+      const sizes=[...new Set([smallFlopBet,Math.max(legal.min_to*2,Math.min(legal.max_to*2,Math.round(hand.pot/2)))])];
+      const candidates=sizes.map(size=>flop_value_evidence(hand,who,estimate,size)).filter(Boolean);
+      const threshold=0.60+0.025*(opponents-1);
+      value_bet_evidence={kind:'checked-to-overpair',threshold,candidates};
+      if(candidates.some(c=>c.worst_lower_share>threshold)){
+        const choice=candidates.find(c=>c.worst_lower_share>threshold);
+        action='raise';target=choice.target_bb;accepted=['check','raise'];confidence='close';
+        reason='This overpair can get value from worse pairs on an unpaired rainbow flop. It remains ahead when one or both opponents call across the tested assumptions, including more strong holdings. Prefer a small bet; checking is also reasonable because future bets and check-raises are not fully modeled.';
+      } else if(candidates.some(c=>c.models.some(m=>m.equity>threshold))){
+        accepted=['check','raise'];confidence='close';
+        reason='Some tested calling ranges support a small value bet with this overpair, but stronger holdings and sampling uncertainty reduce its margin. Prefer checking; a small bet is also accepted. Future betting and check-raises are not fully modeled.';
+      }
+    } else if (legal.raise && eq > 0.58) {
       const continuing = range_equity(hand, who, used, rng, 'balanced', true);
       if (continuing.equity > 0.60 + 0.025 * (opponents - 1)) {
         action = 'raise'; accepted = ['raise']; reason = 'The hand also has strong estimated equity against the narrower ranges likely to continue to a raise.';
@@ -815,35 +1133,26 @@ function advice(hand, who, samples, rng) {
     if (action !== 'raise' && !legal.check && Math.abs(eq - odds - cushion) < Math.max(0.025, 2 * Math.sqrt(estimate.variance / used))) {
       accepted = ['call', 'fold']; confidence = 'close';
     }
-    if (facingPreflopRaise && action !== 'raise') {
-      for (const model of ['tight', 'loose']) {
-        const alt = range_equity(hand, who, Math.max(640, Math.floor(used / 2)), rng, model);
-        const alternativeAction = alt.equity >= odds + cushion ? 'call' : 'fold';
-        sensitivity.push({model, action: alternativeAction, target: null, equity: round1(alt.equity * 100)});
-        const close = Math.abs(alt.equity - odds - cushion) < Math.max(0.025, 2 * Math.sqrt(alt.variance / alt.scenarios.length));
-        for (const candidate of close ? ['call', 'fold'] : [alternativeAction]) if (!accepted.includes(candidate)) accepted.push(candidate);
-      }
-      if (accepted.length > 1) confidence = 'close';
-    }
   }
   if (action === 'raise' && target === null) {
-    const wanted = hand.street === 0 && hand.current_bet <= 2 ? entry_size(hand, who) : call ? 3 * hand.current_bet : Math.max(2, roundEven(hand.pot * 0.5));
+    const wanted = call ? 3 * hand.current_bet : Math.max(2, roundEven(hand.pot * 0.5));
     target = bb(Math.max(legal.min_to * 2, Math.min(wanted, legal.max_to * 2)));
   }
-  const range = hand.street === 0 && hand.current_bet <= 2 && legal.raise && hand.n === 6 ? {...opening_range(position, preflop_limpers(hand, who) > 0), current_hand: hand_class(hand.holes[who])} : null;
-  return {action, accepted: accepted.sort(), target, display: action === 'raise' ? `${hand.current_bet === 0 ? 'Bet' : 'Raise'} to ${target} BB` : capitalize(action),
+  const range = null;
+  return explain_advice(hand, who, {action, accepted: accepted.sort(), target, display: action === 'raise' ? `${hand.current_bet === 0 ? 'Bet' : 'Raise'} to ${target} BB` : capitalize(action),
     equity: round1(estimate.equity * 100), pot_odds: round1(odds * 100), reason, samples: estimate.scenarios.length, requested_samples: samples,
     opponents, position, range, confidence, uncertainty_note: confidence === 'close' ? 'Reasonable range and response assumptions or sampling uncertainty allow more than one action.' : null,
     basis: 'Equity against public-action-weighted ranges. River values use a terminal response model with folds, calls and one normal-sized or all-in reraise; not a solver.',
     model: COACH_VERSION,
     range_summary: estimate.ranges.map(r => ({seat: r.opponent, effective_combos: Math.round(r.effective_combos)})),
-    action_values: values, range_sensitivity: sensitivity, review_evidence};
+    action_values: values, range_sensitivity: sensitivity, review_evidence, ...(value_bet_evidence ? {value_bet_evidence} : {})});
 }
 
 function decision_review(report, chosen) {
+  if (report.graded === false) return {level:'close', label:'Not graded', explanation:report.explanation?.coverage || 'Outside the supported preflop baseline.'};
   if (report.accepted.includes(chosen)) return report.confidence === 'close'
-    ? {level: 'close', label: 'Close', explanation: 'Both reasonable.'}
-    : {level: 'good', label: 'Good', explanation: 'Matches an accepted action.'};
+    ? {level: 'close', label: 'Close', explanation: (chosen === report.action ? report.explanation?.why : report.explanation?.alternatives.find(a=>a.action===chosen)?.reason) || 'Both reasonable.'}
+    : {level: 'good', label: 'Good', explanation: report.explanation?.why || 'Matches an accepted action.'};
   const evidence = report.review_evidence;
   if (evidence?.models === RIVER_STRESS_MODELS.length + 1 && Number.isFinite(evidence.losses[chosen]) && evidence.losses[chosen] > evidence.threshold_bb)
     return {level: 'big-mistake', label: 'Big mistake', explanation: 'This action gives up substantial estimated value across all tested models.'};
@@ -893,10 +1202,10 @@ class Trainer {
     if (action === 'allin' && !hand.legal().raise && hand.legal().call > 0) action = normalized = 'call';
     hand.action(action, action === 'raise' ? chips(size) : null);
     const ok = report.accepted.includes(normalized), hinted = this.hints || this.decision_was_hinted;
-    if (hinted) this.hinted_decisions++; else { this.decisions++; this.correct += Number(ok); }
+    if (hinted) this.hinted_decisions++; else if (report.graded !== false) { this.decisions++; this.correct += Number(ok); }
     this.feedback.unshift({...report, street, board, chosen: normalized,
       chosen_label: requested === 'allin' && normalized === 'raise' ? 'All-in' : normalized === 'raise' && was_bet ? 'Bet' : capitalize(normalized),
-      correct: ok, hinted, review: decision_review(report, normalized), message: ok ? 'Matches the training policy' : 'Review this decision',
+      correct: ok, hinted, review: decision_review(report, normalized), message: report.graded === false ? 'Outside the supported baseline' : ok ? 'Matches the training policy' : 'Review this decision',
       sizing_note: 'Scoring checks the action category; legal raise sizes are not graded.'});
     this.feedback = this.feedback.slice(0, 20); this._advance(); return this.state();
   }
@@ -955,12 +1264,17 @@ class Trainer {
       trainer.hand.assert_invariants();
       assert(Array.isArray(saved.hand.history));
       assert(typeof saved.hand_timestamp === 'string' && saved.hand_timestamp.length > 0);
-      assert(trainer.hand.done || (trainer.hand.actor === 0 && trainer.pending?.model === COACH_VERSION && Array.isArray(trainer.pending.accepted)));
+      assert(trainer.hand.done || (trainer.hand.actor === 0 && ['ranges-v1', 'ranges-v2', 'ranges-v3', 'ranges-v4', COACH_VERSION].includes(trainer.pending?.model) && Array.isArray(trainer.pending.accepted)));
+      if (!trainer.hand.done && trainer.pending.model !== COACH_VERSION) {
+        trainer.pending = advice(trainer.hand, 0, trainer.samples, trainer.coach_rng);
+        trainer.range_revealed = false;
+      }
+      if (!trainer.hand.done && !trainer.pending.explanation) trainer.pending = explain_advice(trainer.hand, 0, trainer.pending);
     }
     return trainer;
   }
 }
-const api = {RANKS, DECK, NAMES, STREETS, Random, Hand, Trainer, chips, evaluate, best_five, compare, hand_name, format_history, equity, opening_hand, hand_class, opening_range, advice, opponent_advice, opponent_range, range_equity, river_values, river_response, decision_review, COACH_VERSION};
+const api = {flop_value_evidence, preflop_context, preflop_policy, in_preflop_range, PREFLOP_RESPONSES, PREFLOP_POLICY, RANKS, DECK, NAMES, STREETS, Random, Hand, Trainer, chips, evaluate, best_five, compare, hand_name, format_history, equity, opening_hand, hand_class, opening_range, advice, opponent_advice, opponent_range, range_equity, river_values, river_response, decision_review, COACH_VERSION};
 if (typeof module !== 'undefined' && module.exports) module.exports = api;
 else root.PokerClassroom = api;
 })(globalThis);

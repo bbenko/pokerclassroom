@@ -15,6 +15,7 @@ Choose a new output name for each experiment:
 npm test
 npm run test:audit
 npm run eval:coach -- evals/example-run/cases
+npm run eval:preflop -- evals/example-run/preflop
 npm run simulate -- 1000 9182 evals/example-run/hands
 npm run audit:histories -- evals/example-run/hands
 ```
@@ -42,6 +43,9 @@ Outputs include:
   Folded opponent cards stay hidden. Third-party importer compatibility is unverified.
 - `summary.json`: settings, outcome coverage, actions, profit and integrity counters.
 - `review/audit.json`: checked files/actions, rules failures and strategy candidates.
+- `preflop-results.json`: Position/action specifications under three seeds,
+  coverage/grading assertions, size bounds and failures. Failing specifications
+  return exit status 1. No solver-EV accuracy is implied.
 - `review-case-results.json`: case IDs, concerns, recommended actions and sizes,
   accepted alternatives, equity, confidence, explanations and sensitivity results.
 
@@ -76,13 +80,18 @@ Review these results separately:
 
 The simulator throws on incomplete hands or invariant failures. The auditor
 returns status 1 for rules failures or missing/empty input, and 0 otherwise.
-Strategy candidates alone do not fail an audit. The evaluator is diagnostic;
-`npm test` contains the explicit regression assertions.
+Strategy candidates alone do not fail an audit. The evaluator reports all public observations and enforces explicit expectations
+for the new postflop calibration under three seeds. Failed expectations return
+status 1. `npm test` also contains regression assertions and analytic caller-branch
+checks. Existing cases without expectation metadata remain diagnostic.
 
 ## Add a decision case
 
-`tests/fixtures/coach-decisions.json` is the single collection of public decision
-observations. For each case:
+`tests/fixtures/coach-decisions.json` holds public decision observations.
+`tests/fixtures/preflop-decisions.json` holds independently specified positional
+scenarios reconstructed through legal actions. Its contrast cases were specified
+before the first run; after use they are public regression cases, not an unseen
+benchmark. Keep expected actions and rationale independent of the policy tables. For each case:
 
 1. Capture state before the decision: positions, stacks, contributions, board,
    current bet, last full raise, `acted_at`, `pending` and public history events.
@@ -113,3 +122,36 @@ failures, reviewed behavior and limitations in the commit or release notes.
 The automatic strategy screen flags suspicious patterns, not proven mistakes.
 Review only information available at the decision, separate rules failures from
 strategic concerns, and state the assumptions supporting an alternative action.
+
+## Preflop replacement evaluation
+
+Before implementation, preserve existing case reports and run 1,000 hands with
+seed 9182. Keep opponent strategy fixed. After implementation, run the full test
+suite, both evaluation suites, the independent auditor tests and two 1,000-hand
+simulations (9182 and 424242), auditing every exported history. Report provisional
+preflop coverage separately from graded decisions. Profit changes are descriptive,
+not evidence of strategic accuracy.
+
+Failure analysis must distinguish policy errors from invalid specifications. For
+example, BB versus SB is in position and should use the in-position size; a cold
+four-bet from BB over SB still has the original BTN raiser to consider. Legacy
+assertions requiring thousands of preflop Monte Carlo samples are obsolete when
+the decision comes from a deterministic positional policy. A 40-BB defense should
+be provisional rather than forced into a 100-BB range. Record any changed action
+expectation and its strategic rationale; do not weaken checks to make a run pass.
+
+## Flop overpair calibration
+
+Hand 13 (KK on 8c 3d 2h after a BTN three-bet, BB/CO calls and two checks) is a
+permanent public observation with no opponent private cards or future board.
+The old check-only rejection was reproduced before integration. New cases add
+AA/QQ/JJ variants and controls for an underpair, an ace above KK, unpaired AK,
+board textures, shallow stacks and a player still to act. Scope-only controls do
+not assert that a bet outside the calibration would be a strategic mistake.
+
+Expected actions, calibration eligibility and size bounds live in each new
+case's `expectation` field. `eval:coach` runs these expectations under seeds 13,
+71 and 2026 and saves the per-seed results in `checks` beside the ordinary case
+reports. These are public regression checks, not unseen strategy validation.
+Inspect `value_bet_evidence` separately from river action EVs: it contains
+conditional sampled showdown shares, not a future-betting EV calculation.

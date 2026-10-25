@@ -95,17 +95,31 @@ function review(report,hint=false){
   if(!hint){
     const grade=reviewGrade(report);
     paragraph(el,grade.label,'grade review-badge '+gradeClass(grade));
-    paragraph(el,'You chose '+(report.chosen_label||report.chosen),'choice-pill '+(report.correct?'good':'bad'));
+    paragraph(el,'You chose '+(report.chosen_label||report.chosen),'choice-pill '+(report.graded===false?'neutral':report.correct?'good':'bad'));
   }
   const line=document.createElement('div');line.className='recommendation';
-  line.textContent=(hint?'':report.correct?'Suggested: ':'Better: ')+report.display;el.append(line);
+  line.textContent=(hint?'':report.graded===false||report.correct?'Suggested: ':'Better: ')+report.display;el.append(line);
   const metrics=document.createElement('div');metrics.className='metrics';
   for(const [label,value] of [[report.model ? 'equity vs. estimated ranges' : 'equity vs. random hands',report.equity],['pot odds',report.pot_odds]]){
+    if(value===null||value===undefined)continue;
     const item=document.createElement('div'),strong=document.createElement('strong');strong.textContent=value+'%';
     item.append(strong,document.createTextNode(label));metrics.append(item);
   }
-  el.append(metrics);paragraph(el,report.reason);
-  if(report.uncertainty_note)paragraph(el,report.uncertainty_note,'decision-note');
+  el.append(metrics);
+  if(report.explanation){
+    const detail=report.explanation;
+    paragraph(el,detail.situation,'decision-note');paragraph(el,detail.why);
+    for(const alternative of detail.alternatives){
+      const p=document.createElement('p'),label=document.createElement('strong');
+      label.textContent=alternative.label+': ';p.append(label,document.createTextNode(alternative.reason));el.append(p);
+    }
+    if(detail.sizing)paragraph(el,detail.sizing,'decision-note');
+    if(detail.coverage)paragraph(el,detail.coverage,'decision-note');
+    else if(!detail.alternatives.length&&report.uncertainty_note)paragraph(el,report.uncertainty_note,'decision-note');
+  }else{
+    paragraph(el,report.reason);
+    if(report.uncertainty_note)paragraph(el,report.uncertainty_note,'decision-note');
+  }
   if(!hint)paragraph(el,report.street+' · '+report.position,'decision-note');
 }
 
@@ -323,7 +337,7 @@ function playSound(kind){
 }
 function playResponseSounds(path,data){
   const report=path==='action'?data.feedback[0]:null;
-  if(report)playSound(report.correct?'good':'review');
+  if(report&&report.graded!==false)playSound(report.correct?'good':'review');
 }
 $('sound-toggle').onclick=()=>{
   soundEnabled=!soundEnabled;

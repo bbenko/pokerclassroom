@@ -9,7 +9,8 @@
     "simulate": "node scripts/simulate.cjs",
     "eval:coach": "node scripts/evaluate-coach.cjs",
     "test:audit": "python3 -m unittest discover -s tests -p test_history_audit.py",
-    "audit:histories": "python3 scripts/review-histories.py"
+    "audit:histories": "python3 scripts/review-histories.py",
+    "eval:preflop": "node scripts/evaluate-preflop.cjs"
   },
   "engines": {
     "node": ">=20"
